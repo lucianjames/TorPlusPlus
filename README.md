@@ -1,5 +1,7 @@
 # TorPlusPlus
-C++ header for talking to a TOR hidden service.
+Allows a C++ program to send and receive data to/from a TOR hidden service. Creates and kills the TOR process itself.
+Future versions/forks/branches/whatever of this code will probably let you embed TOR and everything into the program itself (antivirus probably wont like that, will essentially be a dropper).
+Will probably also add automatic downloading of the TOR files instead of having to put them in there manually (and suffer from potentially outdated versions!)
 
 ## Still in development!
 This project only started existing a couple hours ago, lots of functionality is yet to be implemented.
