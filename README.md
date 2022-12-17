@@ -1,9 +1,9 @@
 # TorPlusPlus
 C++ header for talking to a TOR hidden service.
-### Platform support
+## Platform support
 Currently, I have this header set up for windows exclusively. Will add linux support in the future™
 
-# Why?
+## Why?
 Hidden services are actually really easy to set up, but talking to them from a program is a bit more complicated. This library makes it easy to talk to a hidden service from a program.
 Hidden services have the following advantages over regular websites:
 - Anonymity for both parties
@@ -11,7 +11,7 @@ Hidden services have the following advantages over regular websites:
 - You dont need to port forward when hosting a hidden service
 - ISPs and even governments cant block hidden services (easily)
 
-## ❗ You need to manually do this: ❗
+### ❗ You need to manually do this: ❗
 Requires the "tor" folder from the "Tor Expert Bundle" to be placed next to the executable.
 (This file can be downloaded from https://www.torproject.org/download/tor/)
 
@@ -27,7 +27,7 @@ You can specify the path to the tor.exe executable in the torSocket constructor 
 I might make some kind of script to automate doing this, I dont want to just place the files in here as they will become outdated.
 
 
-# Public functions
+## Public functions
 ```c++
 /*
     torSocket contructor
@@ -82,9 +82,9 @@ int proxySend(const char* data, const int len)
 int proxyRecv(char* data, const int len)
 ```
 
-# Examples
+## Examples
 See https://github.com/LJ3D/TorPlusPlusExamples for some example code
 
 
-# ⚠️ Security ⚠️
+## ⚠️ Security ⚠️
 ⚠️ Absolutely no guarantees on security/anonymity when using this code to talk to TOR ⚠️
