@@ -11,7 +11,7 @@ Hidden services have the following advantages over regular websites:
 - You dont need to port forward when hosting a hidden service
 - ISPs and even governments cant block hidden services (easily)
 
-### ❗ You need to manually do this: ❗
+## ❗ You need to manually do this: ❗
 Requires the "tor" folder from the "Tor Expert Bundle" to be placed next to the executable.
 (This file can be downloaded from https://www.torproject.org/download/tor/)
 
