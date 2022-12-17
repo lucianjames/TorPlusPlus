@@ -22,10 +22,10 @@ Currently, I have this header set up for windows exclusively. Will add linux sup
         torPath: The path to the tor.exe executable
 */
 torSocket(const char* torProxyIP = "127.0.0.1", // The IP address of the proxy (almost always 127.0.0.1)
-            const int torProxyPort = 9050, // The port of the proxy (almost always 9050)
-            const int waitTimeSeconds = 10, // The amount of time to wait for the proxy to start
-            const char* torPath = ".\\tor\\tor.exe" // The path to the tor.exe executable
-            )
+          const int torProxyPort = 9050, // The port of the proxy (almost always 9050)
+          const int waitTimeSeconds = 10, // The amount of time to wait for the proxy to start
+          const char* torPath = ".\\tor\\tor.exe" // The path to the tor.exe executable
+          )
 
 /*
     torSocket destructor
