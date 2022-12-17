@@ -1,5 +1,5 @@
 # TorPlusPlus
-C++ library for talking to a TOR hidden service.
+C++ header for talking to a TOR hidden service.
 ### Platform support
 Currently, I have this header set up for windows exclusively. Will add linux support in the future™
 
