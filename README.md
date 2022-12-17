@@ -1,14 +1,31 @@
 # TorPlusPlus
 C++ library for talking to a TOR hidden service.
+### Platform support
+Currently, I have this header set up for windows exclusively. Will add linux support in the future™
+
+# Why?
+Hidden services are actually really easy to set up, but talking to them from a program is a bit more complicated. This library makes it easy to talk to a hidden service from a program.
+Hidden services have the following advantages over regular websites:
+- Anonymity for both parties
+- No need to pay for a domain name, onion addresses are free forever!
+- You dont need to port forward when hosting a hidden service
+- ISPs and even governments cant block hidden services (easily)
+
 ## You need to manually do this:
 Requires the "tor" folder from the "Tor Expert Bundle" to be placed next to the executable.
 (This file can be downloaded from https://www.torproject.org/download/tor/)
 
+The steps to do this are:
+1. Download the "Tor Expert Bundle" from https://www.torproject.org/download/tor/ (Likely Windows (x86_64) unless you are a caveman)
+2. Extract the tar.gz file
+3. Copy the "tor" folder (which contains the tor.exe executable) to the same folder as your executable
+4. Run your executable - it should start the tor proxy and connect to it!
+
+You can specify the path to the tor.exe executable in the torSocket constructor if you want to place it somewhere else.
+
 
 I might make some kind of script to automate doing this, I dont want to just place the files in here as they will become outdated.
 
-# Platform support
-Currently, I have this header set up for windows exclusively. Will add linux support in the future™
 
 # Public functions
 ```c++
