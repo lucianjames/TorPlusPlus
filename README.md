@@ -10,6 +10,60 @@ I might make some kind of script to automate doing this, I dont want to just pla
 # Platform support
 Currently, I have this header set up for windows exclusively. Will add linux support in the future™
 
+# Public functions
+```c++
+/*
+    torSocket contructor
+    Starts the Tor proxy executable and connects to it
+    Arguments:
+        torProxyIP: The IP address of the proxy
+        torProxyPort: The port of the proxy
+        waitTimeSeconds: The amount of time to wait for the proxy to start
+        torPath: The path to the tor.exe executable
+*/
+torSocket(const char* torProxyIP = "127.0.0.1", // The IP address of the proxy (almost always 127.0.0.1)
+            const int torProxyPort = 9050, // The port of the proxy (almost always 9050)
+            const int waitTimeSeconds = 10, // The amount of time to wait for the proxy to start
+            const char* torPath = ".\\tor\\tor.exe" // The path to the tor.exe executable
+            )
+
+/*
+    torSocket destructor
+    Closes the socket, cleans up Winsock, and terminates the proxy process
+*/
+~torSocket()
+
+/*
+    connectTo()
+    Connects to a host through the proxy
+    Arguments:
+        host: The host to connect to
+        port: The port to connect to
+*/
+void connectTo(const char* host, const int port=80)
+
+/*
+    proxySend()
+    Sends data through the proxy to the service we are connected to
+    Arguments:
+        data: The data to send
+        len: The length of the data to send
+    Returns:
+        The number of bytes sent (or -1 if an error occurred)
+*/
+int proxySend(const char* data, const int len)
+
+/*
+    proxyRecv()
+    Receives data from the proxy
+    Arguments:
+        data: A pointer to a buffer to store the received data
+        len: The maximum number of bytes to receive
+    Returns:
+        The number of bytes received (or -1 if an error occurred)
+*/
+int proxyRecv(char* data, const int len)
+
 # Example
 The following example code sends a HTTP GET request to "CryptBB", and prints the result.
 ```c++
