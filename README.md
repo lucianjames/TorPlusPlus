@@ -63,6 +63,7 @@ int proxySend(const char* data, const int len)
         The number of bytes received (or -1 if an error occurred)
 */
 int proxyRecv(char* data, const int len)
+```
 
 # Example
 The following example code sends a HTTP GET request to "CryptBB", and prints the result.
