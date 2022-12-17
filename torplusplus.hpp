@@ -19,10 +19,10 @@ using namespace torSocketGlobals; // So we can just use DEBUG_printf() instead o
 class torSocket{
 private:
     // === Declare some private variables:
-    PROCESS_INFORMATION torProxyProcess; // This is stored so we can terminate the proxy process when the class is destroyed
-    WSADATA wsaData; // Storing this isnt really necessary. Holds info about the Winsock implementation
-    SOCKET torProxySocket; // The socket used to connect to the proxy
-    sockaddr_in torProxyAddr; // The address of the proxy (usually 127.0.0.1:9050)
+    PROCESS_INFORMATION torProxyProcess = {0}; // This is stored so we can terminate the proxy process when the class is destroyed
+    WSADATA wsaData = {0}; // Storing this isnt really necessary. Holds info about the Winsock implementation
+    SOCKET torProxySocket = {0}; // The socket used to connect to the proxy
+    sockaddr_in torProxyAddr = {0}; // The address of the proxy (usually 127.0.0.1:9050)
     bool connected = false; // Whether or not we have successfully connected to the proxy and authenticated yet
     
     /*
@@ -47,15 +47,15 @@ public:
         torSocket contructor
         Starts the Tor proxy executable and connects to it
         Arguments:
+            torPath: The path to the tor.exe executable
+            waitTimeSeconds: The amount of time to wait for the proxy to start
             torProxyIP: The IP address of the proxy
             torProxyPort: The port of the proxy
-            waitTimeSeconds: The amount of time to wait for the proxy to start
-            torPath: The path to the tor.exe executable
     */
-    torSocket(const char* torProxyIP = "127.0.0.1", // The IP address of the proxy (almost always 127.0.0.1)
-              const int torProxyPort = 9050, // The port of the proxy (almost always 9050)
+    torSocket(const char* torPath = ".\\tor\\tor.exe", // The path to the tor.exe executable
               const int waitTimeSeconds = 10, // The amount of time to wait for the proxy to start
-              const char* torPath = ".\\tor\\tor.exe" // The path to the tor.exe executable
+              const char* torProxyIP = "127.0.0.1", // The IP address of the proxy (almost always 127.0.0.1)
+              const int torProxyPort = 9050 // The port of the proxy (almost always 9050)
               ){
         // === Start the proxy:
         DEBUG_printf("torSocket(): Waiting for Tor proxy to start (%d seconds)...\n", waitTimeSeconds);
@@ -124,7 +124,8 @@ public:
             host: The host to connect to
             port: The port to connect to
     */
-    void connectTo(const char* host, const int port=80){
+    void connectTo(const char* host, 
+                   const int port=80){
         // === Initial checking and setup:
         if(!this->connected){ // If we are not connected to the proxy, abort the connection attempt and give an error message to the stupid developer who forgot to connect to the proxy
             DEBUG_printf("connectTo(): ERR: Not connected to proxy\n");
@@ -166,7 +167,8 @@ public:
         Returns:
             The number of bytes sent (or -1 if an error occurred)
     */
-    int proxySend(const char* data, const int len){
+    int proxySend(const char* data, 
+                  const int len){
         if(!this->connected){ // Ensure that we are connected to the proxy
             DEBUG_printf("proxySend(): ERR: Not connected to proxy\n");
             return -1; // Return -1 to indicate an error if we are not connected to the proxy
@@ -186,7 +188,8 @@ public:
         Returns:
             The number of bytes received (or -1 if an error occurred)
     */
-    int proxyRecv(char* data, const int len){
+    int proxyRecv(char* data, 
+                  const int len){
         if(!this->connected){ // Ensure that we are connected to the proxy
             DEBUG_printf("proxyRecv(): ERR: Not connected to proxy\n");
             return -1; // Return -1 to indicate an error if we are not connected to the proxy
