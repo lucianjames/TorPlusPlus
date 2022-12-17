@@ -1,8 +1,13 @@
 #pragma comment(lib, "ws2_32.lib")
 
+#define _WINSOCK_DEPRECATED_NO_WARNINGS // Disable the "deprecated" warning for inet_addr()
+// I tried using inet_pton() like the warning suggested, but it didnt work and I dont really care to fix it
+
 #include <winsock2.h>
+#include <ws2tcpip.h>
 #include <stdio.h>
 #include <strsafe.h>
+
 
 // Hacky way to enable/disable debug messages, at least its hidden away in a namespace
 namespace torSocketGlobals{
@@ -20,9 +25,15 @@ private:
     sockaddr_in torProxyAddr;
     bool connected = false;
 
-void startTorProxy(const char* torPath){ // torPath points to the tor.exe executable
+int startTorProxy(const char* torPath){ // torPath points to the tor.exe executable
     STARTUPINFO si = {0};
-    CreateProcess((LPCSTR)torPath, NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &this->torProxyProcess);
+    int createProcessResult = CreateProcess((LPCSTR)torPath, NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &this->torProxyProcess);
+    if(createProcessResult == 0){
+        DEBUG_printf("startTorProxy(): ERR: CreateProcess failed: %d\n", GetLastError());
+        return createProcessResult;
+    }
+    DEBUG_printf("startTorProxy(): Tor proxy executable started\n");
+    return createProcessResult;
 }
 
 public:
@@ -31,7 +42,11 @@ public:
               const int waitTimeSeconds = 10,
               const char* torPath = ".\\tor\\tor.exe"){
         DEBUG_printf("torSocket(): Waiting for Tor proxy to start (%d seconds)...\n", waitTimeSeconds);
-        this->startTorProxy(torPath);
+        int startTorProxyResult = this->startTorProxy(torPath);
+        if(startTorProxyResult == 0){
+            DEBUG_printf("torSocket(): ERR: Aborting due to failed proxy start\n");
+            return;
+        }
         Sleep(waitTimeSeconds * 1000); // Sleep for the specified amount of time to allow the proxy to start
         DEBUG_printf("torSocket(): Proxy is probably running, attempting to connect...\n");
         // Initialize Winsock
@@ -82,12 +97,12 @@ public:
     }
 
     void connectTo(const char* host, const int port=80){
-        DEBUG_printf("connectTo(): Attempting to connect to %s:%d\n", host, port);
-        short portN = htons(port); // Convert the port to network byte order
         if(!this->connected){
             DEBUG_printf("connectTo(): ERR: Not connected to proxy\n");
             return;
         }
+        short portN = htons(port); // Convert the port to network byte order
+        DEBUG_printf("connectTo(): Attempting to connect to %s:%d\n", host, port);
         // Assemble a SOCKS5 connect request
         char domainLen = (char)strlen(host); // Get the length of the domain, as a char so it can be sent as a single byte
         char* connectReq = new char[7 + domainLen]; // 7 bytes for the SOCKS5 header, 1 byte for the domain length, and the domain itself
@@ -113,24 +128,24 @@ public:
         DEBUG_printf("connectTo(): Successfully connected to %s:%d\n", host, port);
     }
 
-    size_t proxySend(const char* data, const size_t len){
+    int proxySend(const char* data, const int len){
         if(!this->connected){
             DEBUG_printf("proxySend(): ERR: Not connected to proxy\n");
-            return 0;
+            return -1;
         }
         DEBUG_printf("proxySend(): Sending %d bytes...\n", len);
-        size_t sent = send(this->torProxySocket, data, len, 0);
+        int sent = send(this->torProxySocket, data, len, 0);
         DEBUG_printf("proxySend(): Sent %d bytes\n", sent);
         return sent;
     }
 
-    size_t proxyRecv(char* data, const size_t len){
+    int proxyRecv(char* data, const int len){
         if(!this->connected){
             DEBUG_printf("proxyRecv(): ERR: Not connected to proxy\n");
-            return 0;
+            return -1;
         }
         DEBUG_printf("proxyRecv(): Receiving (up to) %d bytes...\n", len);
-        size_t received = recv(this->torProxySocket, data, len, 0);
+        int received = recv(this->torProxySocket, data, len, 0);
         DEBUG_printf("proxyRecv(): Received %d bytes\n", received);
         return received;
     }

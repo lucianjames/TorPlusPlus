@@ -10,9 +10,9 @@ int main(){
     torSocket torSock;
     torSock.connectTo(TEST_ONION);
     std::string httpReq = "GET / HTTP/1.1\r\nHost: " + std::string(TEST_ONION) + "\r\n\r\n";
-    torSock.proxySend(httpReq.c_str(), httpReq.length());
+    torSock.proxySend(httpReq.c_str(), (int)httpReq.length());
     char buf[16384] = {0}; // 16KB buffer
-    int recvResult = torSock.proxyRecv(buf, sizeof(buf) * sizeof(char));
+    torSock.proxyRecv(buf, sizeof(buf) * sizeof(char));
     printf("%s\n", buf);
     return 0;
 }
