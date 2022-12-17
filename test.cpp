@@ -6,6 +6,7 @@
 // The above test address is for the hacking forum CryptBB
 
 int main(){
+    torSocketGlobals::DEBUG = true; // Enable debug messages
     torSocket torSock;
     torSock.connectTo(TEST_ONION);
     std::string httpReq = "GET / HTTP/1.1\r\nHost: " + std::string(TEST_ONION) + "\r\n\r\n";
