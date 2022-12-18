@@ -41,15 +41,10 @@ I might make some kind of script to automate doing this, I dont want to just pla
 ## Public functions
 ```c++
 /*
-    torSocket contructor
-    Starts the Tor proxy executable and connects to it
-    Arguments:
-        torPath: The path to the tor.exe executable
-        waitTimeSeconds: The amount of time to wait for the proxy to start
-        torProxyIP: The IP address of the proxy
-        torProxyPort: The port of the proxy
+    torSocket constructor
+    Currently does nothing
 */
-torSocket(const char* torPath = ".\\tor\\tor.exe", const int waitTimeSeconds = 10, const char* torProxyIP = "127.0.0.1", const int torProxyPort = 9050)
+torSocket()
 
 /*
     torSocket destructor
@@ -58,13 +53,29 @@ torSocket(const char* torPath = ".\\tor\\tor.exe", const int waitTimeSeconds = 1
 ~torSocket()
 
 /*
+    startProxy()
+    Starts the Tor proxy executable and connects to it
+    Arguments:
+        torPath: The path to the tor.exe executable
+        waitTimeSeconds: The amount of time to wait for the proxy to start (in seconds of course)
+        torProxyIP: The IP address of the proxy
+        torProxyPort: The port of the proxy
+*/
+void startProxy(const char* torPath = ".\\tor\\tor.exe", // The path to the tor.exe executable
+                const int waitTimeSeconds = 10, // The amount of time to wait for the proxy to start - possibly not necessary and probably not the best way to wait for the proxy to start either
+                const char* torProxyIP = "127.0.0.1", // The IP address of the proxy (almost always 127.0.0.1)
+                const int torProxyPort = 9050 // The port of the proxy (almost always 9050)
+                )
+
+/*
     connectTo()
     Connects to a host through the proxy
     Arguments:
         host: The host to connect to
         port: The port to connect to
 */
-void connectTo(const char* host, const int port=80)
+void connectTo(const char* host, 
+               const int port=80)
 
 /*
     proxySend()
@@ -75,7 +86,8 @@ void connectTo(const char* host, const int port=80)
     Returns:
         The number of bytes sent (or -1 if an error occurred)
 */
-int proxySend(const char* data, const int len)
+int proxySend(const char* data, 
+              const int len)
 
 /*
     proxyRecv()
@@ -86,7 +98,8 @@ int proxySend(const char* data, const int len)
     Returns:
         The number of bytes received (or -1 if an error occurred)
 */
-int proxyRecv(char* data, const int len)
+int proxyRecv(char* data, 
+              const int len)
 ```
 
 ## Examples
