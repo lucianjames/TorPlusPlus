@@ -8,22 +8,54 @@
 #include <stdio.h>
 #include <strsafe.h>
 
-// Hacky way to enable/disable debug messages, at least its hidden away in a namespace
-namespace torSocketGlobals{ // Hiding this away in a namespace
-    bool DEBUG = false; // Set this to true to enable debug messages
-    #define DEBUG_printf(...) if(DEBUG) printf(__VA_ARGS__) // Macro that, if DEBUG is true, will printf debug message
+namespace torPlusPlus{
+
+#define DEBUG true // Set to true to enable debug messages - Using macro instead of variable so that strings arent stored in the binary if debugging is turned off
+#define DEBUG_printf(...) if(DEBUG) printf(__VA_ARGS__) // Macro that, if DEBUG is true, will printf debug message
+
+// Use inet_addr() to check if a given const char* is an IPv4 address
+bool isIPv4(const char* ip){
+    return inet_addr(ip) != INADDR_NONE;
 }
-using namespace torSocketGlobals; // So we can just use DEBUG_printf() instead of torSocketGlobals::DEBUG_printf() in this file
+
+// Use inet_pton() to check if a given const char* is an IPv6 address
+bool isIPv6(const char* ip){
+    struct sockaddr_in sa;
+    return inet_pton(AF_INET6, ip, &(sa.sin_addr)) != 0;
+}
+
+// Returns a string containing the error message for a given SOCKS5 error code
+#if DEBUG
+const char* getSocks5Error(const int error){
+    switch(error){
+        case 0x00: return "Succeeded";
+        case 0x01: return "General SOCKS server failure";
+        case 0x02: return "Connection not allowed by ruleset";
+        case 0x03: return "Network unreachable";
+        case 0x04: return "Host unreachable";
+        case 0x05: return "Connection refused";
+        case 0x06: return "TTL expired";
+        case 0x07: return "Command not supported";
+        case 0x08: return "Address type not supported";
+        default: return "Unknown error";
+    }
+}
+#else
+const char* getSocks5Error(const int error){
+    return ""; // If debugging is turned off, then we dont want to store strings for the error messages in the binary. Totally not to make it harder to reverse engineer the binary
+}
+#endif
 
 // The torSocket class
 class torSocket{
-private:
+protected:
     // === Declare some private variables:
     PROCESS_INFORMATION torProxyProcess = {0}; // This is stored so we can terminate the proxy process when the class is destroyed
     WSADATA wsaData = {0}; // Storing this isnt really necessary. Holds info about the Winsock implementation
     SOCKET torProxySocket = {0}; // The socket used to connect to the proxy
     sockaddr_in torProxyAddr = {0}; // The address of the proxy (usually 127.0.0.1:9050)
     bool connected = false; // Whether or not we have successfully connected to the proxy and authenticated yet
+    bool socks5ConnectedToHost = false; // Whether or not we have successfully connected to the host through the proxy
     
     /*
         startTorProxy()
@@ -44,19 +76,37 @@ private:
 
 public:
     /*
-        torSocket contructor
+        torSocket constructor
+        Currently does nothing
+    */
+    torSocket(){
+
+    }
+
+    /*
+        torSocket destructor
+        Closes the socket, cleans up Winsock, and terminates the proxy process
+    */
+    ~torSocket(){ // Destructor
+        closesocket(this->torProxySocket); // Close the socket
+        WSACleanup(); // Cleanup Winsock
+        TerminateProcess(this->torProxyProcess.hProcess, 0); // Terminate the proxy process
+    }
+
+    /*
+        startProxy()
         Starts the Tor proxy executable and connects to it
         Arguments:
             torPath: The path to the tor.exe executable
-            waitTimeSeconds: The amount of time to wait for the proxy to start
+            waitTimeSeconds: The amount of time to wait for the proxy to start (in seconds of course)
             torProxyIP: The IP address of the proxy
             torProxyPort: The port of the proxy
     */
-    torSocket(const char* torPath = ".\\tor\\tor.exe", // The path to the tor.exe executable
-              const int waitTimeSeconds = 10, // The amount of time to wait for the proxy to start
-              const char* torProxyIP = "127.0.0.1", // The IP address of the proxy (almost always 127.0.0.1)
-              const int torProxyPort = 9050 // The port of the proxy (almost always 9050)
-              ){
+    void startProxy(const char* torPath = ".\\tor\\tor.exe", // The path to the tor.exe executable
+                    const int waitTimeSeconds = 10, // The amount of time to wait for the proxy to start - possibly not necessary and probably not the best way to wait for the proxy to start either
+                    const char* torProxyIP = "127.0.0.1", // The IP address of the proxy (almost always 127.0.0.1)
+                    const int torProxyPort = 9050 // The port of the proxy (almost always 9050)
+                    ){
         // === Start the proxy:
         DEBUG_printf("torSocket(): Waiting for Tor proxy to start (%d seconds)...\n", waitTimeSeconds);
         int startTorProxyResult = this->startTorProxy(torPath); // Start the proxy executable as a separate process
@@ -108,18 +158,9 @@ public:
     }
 
     /*
-        torSocket destructor
-        Closes the socket, cleans up Winsock, and terminates the proxy process
-    */
-    ~torSocket(){ // Destructor
-        closesocket(this->torProxySocket); // Close the socket
-        WSACleanup(); // Cleanup Winsock
-        TerminateProcess(this->torProxyProcess.hProcess, 0); // Terminate the proxy process
-    }
-
-    /*
         connectTo()
-        Connects to a host through the proxy
+        Connects to a host through the proxy.
+        Can be passed a domain name or an IP address
         Arguments:
             host: The host to connect to
             port: The port to connect to
@@ -131,31 +172,36 @@ public:
             DEBUG_printf("connectTo(): ERR: Not connected to proxy\n");
             return; // Abort the connection attempt
         }
-        short portN = htons(port); // Convert the port to network byte order.
+        if(isIPv4(host) || isIPv6(host)){
+            DEBUG_printf("connectTo(): ERR: Host is an IP address, not a domain name. Unsupported (might fix)\n");
+            return; // Abort the connection attempt
+        }
         DEBUG_printf("connectTo(): Attempting to connect to %s:%d\n", host, port);
         // === Assemble a SOCKS5 connect request:
-        char domainLen = (char)strlen(host); // Get the length of the domain, as a char so it can be sent as a single byte
-        char* connectReq = new char[7 + domainLen]; // 7 bytes for the SOCKS5 header, 1 byte for the domain length, and the domain itself
-        connectReq[0] = 0x05; // SOCKS5
-        connectReq[1] = 0x01; // Connect
+        char hostLen = (char)strlen(host); // Get the length of the domain, as a char so it can be sent as a single byte
+        char* connectReq = new char[7 + hostLen]; // 7 bytes for the SOCKS5 header, 1 byte for the domain length, and the domain itself
+        connectReq[0] = 0x05; // Specify that we are using the  SOCKS5 protocol
+        connectReq[1] = 0x01; // Specify that this is a connect command
         connectReq[2] = 0x00; // Reserved
-        connectReq[3] = 0x03; // Domain
-        connectReq[4] = domainLen; // Domain length
-        memcpy(connectReq + 5, host, domainLen); // Copy the domain into the connect request, starting at byte 5
-        memcpy(connectReq + 5 + domainLen, &portN, 2); // Copy the port into the connect request, starting at byte <domain length> + 5
+        connectReq[3] = 0x03; // Specify that the host is a domain name
+        connectReq[4] = hostLen; // Domain length
+        memcpy(connectReq + 5, host, hostLen); // Copy the domain into the connect request, starting at byte 5
+        short portN = htons(port); // Convert the port to network byte order.
+        memcpy(connectReq + 5 + hostLen, &portN, 2); // Copy the port into the connect request, starting at byte <domain length> + 5
         // === Send the connect request:
         DEBUG_printf("connectTo(): Sending connect request to proxy\n");
-        send(this->torProxySocket, connectReq, 7 + domainLen, 0); // Send the connect request to the proxy // TODO: ERROR CHECKING
+        send(this->torProxySocket, connectReq, 7 + hostLen, 0); // Send the connect request to the proxy // TODO: ERROR CHECKING
         delete[] connectReq; // Free the memory used to store the connect request
         // === Get the connect response:
         DEBUG_printf("connectTo(): Waiting for connect response from proxy...\n");
         char connectResp[10]; // A buffer to hold the connect response from the proxy
         recv(this->torProxySocket, connectResp, sizeof(connectResp), 0); // Receive the connect response from the proxy
         if(connectResp[1] != 0x00){ // If the proxy responded with an error, abort the connection attempt
-            DEBUG_printf("connectTo(): ERR: Proxy connection failed with error: %d\n", connectResp[1]);
+            DEBUG_printf("connectTo(): ERR: Proxy connection failed with error: %d: %s", connectResp[1], getSocks5Error(connectResp[1]));
             return; // Abort the connection attempt
         }
         DEBUG_printf("connectTo(): Successfully connected to %s:%d\n", host, port);
+        this->socks5ConnectedToHost = true; // We have successfully connected to the host through the proxy, so set this->socks5ConnectedToHost to true
     }
 
     /*
@@ -169,8 +215,8 @@ public:
     */
     int proxySend(const char* data, 
                   const int len){
-        if(!this->connected){ // Ensure that we are connected to the proxy
-            DEBUG_printf("proxySend(): ERR: Not connected to proxy\n");
+        if(!(this->connected && this->socks5ConnectedToHost)){ // Ensure that we are connected to the proxy and to the host through the proxy
+            DEBUG_printf("proxySend(): ERR: Not connected to proxy/remote host\n");
             return -1; // Return -1 to indicate an error if we are not connected to the proxy
         }
         DEBUG_printf("proxySend(): Sending %d bytes...\n", len);
@@ -190,7 +236,7 @@ public:
     */
     int proxyRecv(char* data, 
                   const int len){
-        if(!this->connected){ // Ensure that we are connected to the proxy
+        if(!(this->connected && this->socks5ConnectedToHost)){  // Ensure that we are connected to the proxy and to the host through the proxy
             DEBUG_printf("proxyRecv(): ERR: Not connected to proxy\n");
             return -1; // Return -1 to indicate an error if we are not connected to the proxy
         }
@@ -200,4 +246,28 @@ public:
         return received; // Return the number of bytes received
     }
 
+    /*
+        proxyClose()
+        Stops the proxy and closes the socket
+    */
+    void proxyClose(){
+        if(this->connected){ // If we are connected to the proxy, close the socket and terminate the proxy process
+            DEBUG_printf("proxyClose(): Closing proxy socket\n");
+            closesocket(this->torProxySocket); // Close the socket
+            DEBUG_printf("proxyClose(): Running WSACleanup\n");
+            WSACleanup(); // Cleanup Winsock
+            DEBUG_printf("proxyClose(): Terminating proxy process\n");
+            if(TerminateProcess(this->torProxyProcess.hProcess, 0) == 0){ // Terminate the proxy process
+                DEBUG_printf("proxyClose(): ERR: Failed to terminate proxy process\n");
+            }
+            this->connected = false; // Set this->connected to false
+            this->socks5ConnectedToHost = false; // Set this->socks5ConnectedToHost to false
+        }else{
+            DEBUG_printf("proxyClose(): ERR: Not connected to proxy - attempting to terminate proxy process anyway\n");
+            TerminateProcess(this->torProxyProcess.hProcess, 0); // Terminate the proxy process - Hopefully this doesnt break anything if the proxy process is already terminated
+        }
+    }
+
 };
+
+}
