@@ -100,6 +100,12 @@ int proxySend(const char* data,
 */
 int proxyRecv(char* data, 
               const int len)
+
+/*
+    proxyClose()
+    Stops the proxy and closes the socket
+*/
+void proxyClose()
 ```
 
 ## Examples
