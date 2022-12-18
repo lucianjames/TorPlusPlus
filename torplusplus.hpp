@@ -55,6 +55,7 @@ private:
     SOCKET torProxySocket = {0}; // The socket used to connect to the proxy
     sockaddr_in torProxyAddr = {0}; // The address of the proxy (usually 127.0.0.1:9050)
     bool connected = false; // Whether or not we have successfully connected to the proxy and authenticated yet
+    bool socks5ConnectedToHost = false; // Whether or not we have successfully connected to the host through the proxy
     
     /*
         startTorProxy()
@@ -163,6 +164,10 @@ public:
             DEBUG_printf("connectTo(): ERR: Not connected to proxy\n");
             return; // Abort the connection attempt
         }
+        if(isIPv4(host) || isIPv6(host)){
+            DEBUG_printf("connectTo(): ERR: Host is an IP address, not a domain name. Unsupported (might fix)\n");
+            return; // Abort the connection attempt
+        }
         DEBUG_printf("connectTo(): Attempting to connect to %s:%d\n", host, port);
         // === Assemble a SOCKS5 connect request:
         char hostLen = (char)strlen(host); // Get the length of the domain, as a char so it can be sent as a single byte
@@ -188,42 +193,8 @@ public:
             return; // Abort the connection attempt
         }
         DEBUG_printf("connectTo(): Successfully connected to %s:%d\n", host, port);
+        this->socks5ConnectedToHost = true; // We have successfully connected to the host through the proxy, so set this->socks5ConnectedToHost to true
     }
-
-    void connectToIPv4(const char* host,
-                       const int port=80){
-        // === Initial checking and setup:
-        if(!this->connected){ // If we are not connected to the proxy, abort the connection attempt and give an error message to the stupid developer who forgot to connect to the proxy
-            DEBUG_printf("connectToIPv4(): ERR: Not connected to proxy\n");
-            return; // Abort the connection attempt
-        }
-        DEBUG_printf("connectToIPv4(): Attempting to connect to %s:%d\n", host, port);
-        // === Assemble a SOCKS5 connect request:
-        char hostLen = (char)strlen(host); // Get the length of the domain, as a char so it can be sent as a single byte
-        char* connectReq = new char[10]; // 7 bytes for the SOCKS5 header, 1 byte for the domain length, and the domain itself
-        connectReq[0] = 0x05; // Specify that we are using the  SOCKS5 protocol
-        connectReq[1] = 0x01; // Specify that this is a connect command
-        connectReq[2] = 0x00; // Reserved
-        connectReq[3] = 0x01; // Specify that the host is an IPv4 address
-        memcpy(connectReq + 4, host, 4); // Copy the IPv4 address into the connect request, starting at byte 4
-        short portN = htons(port); // Convert the port to network byte order.
-        memcpy(connectReq + 8, &portN, 2); // Copy the port into the connect request, starting at byte 8
-        // === Send the connect request:
-        DEBUG_printf("connectToIPv4(): Sending connect request to proxy\n");
-        send(this->torProxySocket, connectReq, 10, 0); // Send the connect request to the proxy // TODO: ERROR CHECKING
-        delete[] connectReq; // Free the memory used to store the connect request
-        // === Get the connect response:
-        DEBUG_printf("connectToIPv4(): Waiting for connect response from proxy...\n");
-        char connectResp[10]; // A buffer to hold the connect response from the proxy
-        recv(this->torProxySocket, connectResp, sizeof(connectResp), 0); // Receive the connect response from the proxy
-        if(connectResp[1] != 0x00){ // If the proxy responded with an error, abort the connection attempt
-            DEBUG_printf("connectToIPv4(): ERR: Proxy connection failed with error: %d: %s", connectResp[1], getSocks5Error(connectResp[1]));
-            return; // Abort the connection attempt
-        }
-        DEBUG_printf("connectToIPv4(): Successfully connected to %s:%d\n", host, port);
-    }
-
-
 
     /*
         proxySend()
@@ -236,8 +207,8 @@ public:
     */
     int proxySend(const char* data, 
                   const int len){
-        if(!this->connected){ // Ensure that we are connected to the proxy
-            DEBUG_printf("proxySend(): ERR: Not connected to proxy\n");
+        if(!(this->connected && this->socks5ConnectedToHost)){ // Ensure that we are connected to the proxy and to the host through the proxy
+            DEBUG_printf("proxySend(): ERR: Not connected to proxy/remote host\n");
             return -1; // Return -1 to indicate an error if we are not connected to the proxy
         }
         DEBUG_printf("proxySend(): Sending %d bytes...\n", len);
@@ -257,7 +228,7 @@ public:
     */
     int proxyRecv(char* data, 
                   const int len){
-        if(!this->connected){ // Ensure that we are connected to the proxy
+        if(!(this->connected && this->socks5ConnectedToHost)){  // Ensure that we are connected to the proxy and to the host through the proxy
             DEBUG_printf("proxyRecv(): ERR: Not connected to proxy\n");
             return -1; // Return -1 to indicate an error if we are not connected to the proxy
         }
