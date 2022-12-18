@@ -1,5 +1,6 @@
 # TorPlusPlus
-Allows a C++ program to send and receive data to/from a TOR hidden service. Creates and kills the TOR process itself.
+Allows a C++ program to send and receive data through TOR to regular or hidden services.
+Creates and kills the TOR process itself.
 Future versions/forks/branches/whatever of this code will probably let you embed TOR and everything into the program itself (antivirus probably wont like that, will essentially be a dropper).
 Will probably also add automatic downloading of the TOR files instead of having to put them in there manually (and suffer from potentially outdated versions!)
 
@@ -32,6 +33,10 @@ You can specify the path to the tor.exe executable in the torSocket constructor 
 
 I might make some kind of script to automate doing this, I dont want to just place the files in here as they will become outdated.
 
+
+## ❗ Problems: ❗
+* Havent got IPv4 addresses working in the connectTo() function yet
+* + more that I probably havent discovered yet
 
 ## Public functions
 ```c++
