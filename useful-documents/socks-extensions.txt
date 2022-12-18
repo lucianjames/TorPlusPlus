@@ -1,0 +1,117 @@
+
+                 Tor's extensions to the SOCKS protocol
+
+Table of Contents
+
+    1. Overview
+        1.1. Extent of support
+    2. Name lookup
+    3. Other command extensions.
+    4. HTTP-resistance
+    5. Optimistic data
+
+1. Overview
+
+  The SOCKS protocol provides a generic interface for TCP proxies.  Client
+  software connects to a SOCKS server via TCP, and requests a TCP connection
+  to another address and port.  The SOCKS server establishes the connection,
+  and reports success or failure to the client.  After the connection has
+  been established, the client application uses the TCP stream as usual.
+
+  Tor supports SOCKS4 as defined in [1], SOCKS4A as defined in [2], and
+  SOCKS5 as defined in [3] and [4].
+
+  The stickiest issue for Tor in supporting clients, in practice, is forcing
+  DNS lookups to occur at the OR side: if clients do their own DNS lookup,
+  the DNS server can learn which addresses the client wants to reach.
+  SOCKS4 supports addressing by IPv4 address; SOCKS4A is a kludge on top of
+  SOCKS4 to allow addressing by hostname; SOCKS5 supports IPv4, IPv6, and
+  hostnames.
+
+1.1. Extent of support
+
+  Tor supports the SOCKS4, SOCKS4A, and SOCKS5 standards, except as follows:
+
+  BOTH:
+  - The BIND command is not supported.
+
+  SOCKS4,4A:
+  - SOCKS4 usernames are used to implement stream isolation.
+
+  SOCKS5:
+  - The (SOCKS5) "UDP ASSOCIATE" command is not supported.
+  - SOCKS5 BIND command is not supported.
+  - IPv6 is not supported in CONNECT commands.
+  - SOCKS5 GSSAPI subnegotiation is not supported.
+  - The "NO AUTHENTICATION REQUIRED" (SOCKS5) authentication method [00] is
+    supported; and as of Tor 0.2.3.2-alpha, the "USERNAME/PASSWORD" (SOCKS5)
+    authentication method [02] is supported too, and used as a method to
+    implement stream isolation. As an extension to support some broken clients,
+    we allow clients to pass "USERNAME/PASSWORD" authentication message to us
+    even if no authentication was selected. Furthermore, we allow
+    username/password fields of this message to be empty. This technically
+    violates RFC1929 [4], but ensures interoperability with somewhat broken
+    SOCKS5 client implementations.
+  - Custom reply error code. The "REP" fields, as per the RFC[3], has
+    unassigned values which are used to describe Tor internal errors. See
+    ExtendedErrors in the tor.1 man page for more details. It is only sent
+    back if this SocksPort flag is set.
+
+  (For more information on stream isolation, see IsolateSOCKSAuth on the Tor
+  manpage.)
+
+2. Name lookup
+
+  As an extension to SOCKS4A and SOCKS5, Tor implements a new command value,
+  "RESOLVE" [F0].  When Tor receives a "RESOLVE" SOCKS command, it initiates
+  a remote lookup of the hostname provided as the target address in the SOCKS
+  request.  The reply is either an error (if the address couldn't be
+  resolved) or a success response.  In the case of success, the address is
+  stored in the portion of the SOCKS response reserved for remote IP address.
+
+  (We support RESOLVE in SOCKS4 too, even though it is unnecessary.)
+
+  For SOCKS5 only, we support reverse resolution with a new command value,
+  "RESOLVE_PTR" [F1]. In response to a "RESOLVE_PTR" SOCKS5 command with
+  an IPv4 address as its target, Tor attempts to find the canonical
+  hostname for that IPv4 record, and returns it in the "server bound
+  address" portion of the reply.
+  (This command was not supported before Tor 0.1.2.2-alpha.)
+
+3. Other command extensions.
+
+  Tor 0.1.2.4-alpha added a new command value: "CONNECT_DIR" [F2].
+  In this case, Tor will open an encrypted direct TCP connection to the
+  directory port of the Tor server specified by address:port (the port
+  specified should be the ORPort of the server). It uses a one-hop tunnel
+  and a "BEGIN_DIR" relay cell to accomplish this secure connection.
+
+  The F2 command value was removed in Tor 0.2.0.10-alpha in favor of a
+  new use_begindir flag in edge_connection_t.
+
+4. HTTP-resistance
+
+  Tor checks the first byte of each SOCKS request to see whether it looks
+  more like an HTTP request (that is, it starts with a "G", "H", or "P").  If
+  so, Tor returns a small webpage, telling the user that his/her browser is
+  misconfigured.  This is helpful for the many users who mistakenly try to
+  use Tor as an HTTP proxy instead of a SOCKS proxy.
+
+5. Optimistic data
+
+  Tor allows SOCKS clients to send connection data before Tor has sent a
+  SOCKS response.  When using an exit node that supports "optimistic data",
+  Tor will send such data to the server without waiting to see whether the
+  connection attempt succeeds.  This behavior can save a single round-trip
+  time when starting connections with a protocol where the client speaks
+  first (like HTTP).  Clients that do this must be ready to hear that
+  their connection has succeeded or failed _after_ they have sent the
+  data.
+
+
+
+References:
+ [1] http://en.wikipedia.org/wiki/SOCKS#SOCKS4
+ [2] http://en.wikipedia.org/wiki/SOCKS#SOCKS4a
+ [3] SOCKS5: RFC 1928 https://www.ietf.org/rfc/rfc1928.txt
+ [4] RFC 1929: https://www.ietf.org/rfc/rfc1929.txt
