@@ -172,8 +172,12 @@ public:
             DEBUG_printf("connectTo(): ERR: Not connected to proxy\n");
             return; // Abort the connection attempt
         }
-        if(isIPv4(host) || isIPv6(host)){
-            DEBUG_printf("connectTo(): ERR: Host is an IP address, not a domain name. Unsupported (might fix)\n");
+        if(isIPv4(host)){
+            DEBUG_printf("connectTo(): ERR: Host is an IPv4 address, this function does not support IPv4 addresses (yet(\n");
+            return; // Abort the connection attempt
+        }
+        if(isIPv6(host)){
+            DEBUG_printf("connectTo(): ERR: Host is an IPv6 address, which is not supported by the TOR SOCKS5 proxy\n");
             return; // Abort the connection attempt
         }
         DEBUG_printf("connectTo(): Attempting to connect to %s:%d\n", host, port);
