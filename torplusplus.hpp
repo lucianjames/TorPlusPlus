@@ -8,12 +8,10 @@
 #include <stdio.h>
 #include <strsafe.h>
 
-// Hacky way to enable/disable debug messages, at least its hidden away in a namespace
-namespace torSocketGlobals{ // Hiding this away in a namespace
-    bool DEBUG = false; // Set this to true to enable debug messages
-    #define DEBUG_printf(...) if(DEBUG) printf(__VA_ARGS__) // Macro that, if DEBUG is true, will printf debug message
-}
-using namespace torSocketGlobals; // So we can just use DEBUG_printf() instead of torSocketGlobals::DEBUG_printf() in this file
+namespace torPlusPlus{
+
+bool DEBUG = false; // Set this to true to enable debug messages
+#define DEBUG_printf(...) if(DEBUG) printf(__VA_ARGS__) // Macro that, if DEBUG is true, will printf debug message
 
 // The torSocket class
 class torSocket{
@@ -201,3 +199,5 @@ public:
     }
 
 };
+
+}
