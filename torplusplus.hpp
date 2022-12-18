@@ -10,7 +10,7 @@
 
 namespace torPlusPlus{
 
-#define DEBUG true // Set to true to enable debug messages
+#define DEBUG true // Set to true to enable debug messages - Using macro instead of variable so that strings arent stored in the binary if debugging is turned off
 #define DEBUG_printf(...) if(DEBUG) printf(__VA_ARGS__) // Macro that, if DEBUG is true, will printf debug message
 
 // Use inet_addr() to check if a given const char* is an IPv4 address
@@ -48,7 +48,7 @@ const char* getSocks5Error(const int error){
 
 // The torSocket class
 class torSocket{
-private:
+protected:
     // === Declare some private variables:
     PROCESS_INFORMATION torProxyProcess = {0}; // This is stored so we can terminate the proxy process when the class is destroyed
     WSADATA wsaData = {0}; // Storing this isnt really necessary. Holds info about the Winsock implementation
@@ -76,19 +76,37 @@ private:
 
 public:
     /*
-        torSocket contructor
+        torSocket constructor
+        Currently does nothing
+    */
+    torSocket(){
+
+    }
+
+    /*
+        torSocket destructor
+        Closes the socket, cleans up Winsock, and terminates the proxy process
+    */
+    ~torSocket(){ // Destructor
+        closesocket(this->torProxySocket); // Close the socket
+        WSACleanup(); // Cleanup Winsock
+        TerminateProcess(this->torProxyProcess.hProcess, 0); // Terminate the proxy process
+    }
+
+    /*
+        startProxy()
         Starts the Tor proxy executable and connects to it
         Arguments:
             torPath: The path to the tor.exe executable
-            waitTimeSeconds: The amount of time to wait for the proxy to start
+            waitTimeSeconds: The amount of time to wait for the proxy to start (in seconds of course)
             torProxyIP: The IP address of the proxy
             torProxyPort: The port of the proxy
     */
-    torSocket(const char* torPath = ".\\tor\\tor.exe", // The path to the tor.exe executable
-              const int waitTimeSeconds = 10, // The amount of time to wait for the proxy to start
-              const char* torProxyIP = "127.0.0.1", // The IP address of the proxy (almost always 127.0.0.1)
-              const int torProxyPort = 9050 // The port of the proxy (almost always 9050)
-              ){
+    void startProxy(const char* torPath = ".\\tor\\tor.exe", // The path to the tor.exe executable
+                    const int waitTimeSeconds = 10, // The amount of time to wait for the proxy to start - possibly not necessary and probably not the best way to wait for the proxy to start either
+                    const char* torProxyIP = "127.0.0.1", // The IP address of the proxy (almost always 127.0.0.1)
+                    const int torProxyPort = 9050 // The port of the proxy (almost always 9050)
+                    ){
         // === Start the proxy:
         DEBUG_printf("torSocket(): Waiting for Tor proxy to start (%d seconds)...\n", waitTimeSeconds);
         int startTorProxyResult = this->startTorProxy(torPath); // Start the proxy executable as a separate process
@@ -140,19 +158,9 @@ public:
     }
 
     /*
-        torSocket destructor
-        Closes the socket, cleans up Winsock, and terminates the proxy process
-    */
-    ~torSocket(){ // Destructor
-        closesocket(this->torProxySocket); // Close the socket
-        WSACleanup(); // Cleanup Winsock
-        TerminateProcess(this->torProxyProcess.hProcess, 0); // Terminate the proxy process
-    }
-
-    /*
         connectTo()
         Connects to a host through the proxy.
-        can be passed a domain name or an IP address
+        Can be passed a domain name or an IP address
         Arguments:
             host: The host to connect to
             port: The port to connect to
@@ -246,8 +254,12 @@ public:
         if(this->connected){ // If we are connected to the proxy, close the socket and terminate the proxy process
             DEBUG_printf("proxyClose(): Closing proxy socket\n");
             closesocket(this->torProxySocket); // Close the socket
+            DEBUG_printf("proxyClose(): Running WSACleanup\n");
+            WSACleanup(); // Cleanup Winsock
             DEBUG_printf("proxyClose(): Terminating proxy process\n");
-            TerminateProcess(this->torProxyProcess.hProcess, 0); // Terminate the proxy process
+            if(TerminateProcess(this->torProxyProcess.hProcess, 0) == 0){ // Terminate the proxy process
+                DEBUG_printf("proxyClose(): ERR: Failed to terminate proxy process\n");
+            }
             this->connected = false; // Set this->connected to false
             this->socks5ConnectedToHost = false; // Set this->socks5ConnectedToHost to false
         }else{
