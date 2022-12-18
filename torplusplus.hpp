@@ -10,8 +10,41 @@
 
 namespace torPlusPlus{
 
-bool DEBUG = false; // Set this to true to enable debug messages
+#define DEBUG true // Set to true to enable debug messages
 #define DEBUG_printf(...) if(DEBUG) printf(__VA_ARGS__) // Macro that, if DEBUG is true, will printf debug message
+
+// Use inet_addr() to check if a given const char* is an IPv4 address
+bool isIPv4(const char* ip){
+    return inet_addr(ip) != INADDR_NONE;
+}
+
+// Use inet_pton() to check if a given const char* is an IPv6 address
+bool isIPv6(const char* ip){
+    struct sockaddr_in sa;
+    return inet_pton(AF_INET6, ip, &(sa.sin_addr)) != 0;
+}
+
+// Returns a string containing the error message for a given SOCKS5 error code
+#if DEBUG
+const char* getSocks5Error(const int error){
+    switch(error){
+        case 0x00: return "Succeeded";
+        case 0x01: return "General SOCKS server failure";
+        case 0x02: return "Connection not allowed by ruleset";
+        case 0x03: return "Network unreachable";
+        case 0x04: return "Host unreachable";
+        case 0x05: return "Connection refused";
+        case 0x06: return "TTL expired";
+        case 0x07: return "Command not supported";
+        case 0x08: return "Address type not supported";
+        default: return "Unknown error";
+    }
+}
+#else
+const char* getSocks5Error(const int error){
+    return ""; // If debugging is turned off, then we dont want to store strings for the error messages in the binary. Totally not to make it harder to reverse engineer the binary
+}
+#endif
 
 // The torSocket class
 class torSocket{
@@ -117,7 +150,8 @@ public:
 
     /*
         connectTo()
-        Connects to a host through the proxy
+        Connects to a host through the proxy.
+        can be passed a domain name or an IP address
         Arguments:
             host: The host to connect to
             port: The port to connect to
@@ -129,28 +163,28 @@ public:
             DEBUG_printf("connectTo(): ERR: Not connected to proxy\n");
             return; // Abort the connection attempt
         }
-        short portN = htons(port); // Convert the port to network byte order.
         DEBUG_printf("connectTo(): Attempting to connect to %s:%d\n", host, port);
         // === Assemble a SOCKS5 connect request:
-        char domainLen = (char)strlen(host); // Get the length of the domain, as a char so it can be sent as a single byte
-        char* connectReq = new char[7 + domainLen]; // 7 bytes for the SOCKS5 header, 1 byte for the domain length, and the domain itself
-        connectReq[0] = 0x05; // SOCKS5
-        connectReq[1] = 0x01; // Connect
+        char hostLen = (char)strlen(host); // Get the length of the domain, as a char so it can be sent as a single byte
+        char* connectReq = new char[7 + hostLen]; // 7 bytes for the SOCKS5 header, 1 byte for the domain length, and the domain itself
+        connectReq[0] = 0x05; // Specify that we are using the  SOCKS5 protocol
+        connectReq[1] = 0x01; // Specify that this is a connect command
         connectReq[2] = 0x00; // Reserved
-        connectReq[3] = 0x03; // Domain
-        connectReq[4] = domainLen; // Domain length
-        memcpy(connectReq + 5, host, domainLen); // Copy the domain into the connect request, starting at byte 5
-        memcpy(connectReq + 5 + domainLen, &portN, 2); // Copy the port into the connect request, starting at byte <domain length> + 5
+        connectReq[3] = (isIPv4(host) ? 0x01 : isIPv6(host) ? 0x04 : 0x03); // Address type: 0x01 = IPv4, 0x04 = IPv6, 0x03 = Domain name
+        connectReq[4] = hostLen; // Domain length
+        memcpy(connectReq + 5, host, hostLen); // Copy the domain into the connect request, starting at byte 5
+        short portN = htons(port); // Convert the port to network byte order.
+        memcpy(connectReq + 5 + hostLen, &portN, 2); // Copy the port into the connect request, starting at byte <domain length> + 5
         // === Send the connect request:
         DEBUG_printf("connectTo(): Sending connect request to proxy\n");
-        send(this->torProxySocket, connectReq, 7 + domainLen, 0); // Send the connect request to the proxy // TODO: ERROR CHECKING
+        send(this->torProxySocket, connectReq, 7 + hostLen, 0); // Send the connect request to the proxy // TODO: ERROR CHECKING
         delete[] connectReq; // Free the memory used to store the connect request
         // === Get the connect response:
         DEBUG_printf("connectTo(): Waiting for connect response from proxy...\n");
         char connectResp[10]; // A buffer to hold the connect response from the proxy
         recv(this->torProxySocket, connectResp, sizeof(connectResp), 0); // Receive the connect response from the proxy
         if(connectResp[1] != 0x00){ // If the proxy responded with an error, abort the connection attempt
-            DEBUG_printf("connectTo(): ERR: Proxy connection failed with error: %d\n", connectResp[1]);
+            DEBUG_printf("connectTo(): ERR: Proxy connection failed with error: %d: %s", connectResp[1], getSocks5Error(connectResp[1]));
             return; // Abort the connection attempt
         }
         DEBUG_printf("connectTo(): Successfully connected to %s:%d\n", host, port);
