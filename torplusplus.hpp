@@ -238,6 +238,24 @@ public:
         return received; // Return the number of bytes received
     }
 
+    /*
+        proxyClose()
+        Stops the proxy and closes the socket
+    */
+    void proxyClose(){
+        if(this->connected){ // If we are connected to the proxy, close the socket and terminate the proxy process
+            DEBUG_printf("proxyClose(): Closing proxy socket\n");
+            closesocket(this->torProxySocket); // Close the socket
+            DEBUG_printf("proxyClose(): Terminating proxy process\n");
+            TerminateProcess(this->torProxyProcess.hProcess, 0); // Terminate the proxy process
+            this->connected = false; // Set this->connected to false
+            this->socks5ConnectedToHost = false; // Set this->socks5ConnectedToHost to false
+        }else{
+            DEBUG_printf("proxyClose(): ERR: Not connected to proxy - attempting to terminate proxy process anyway\n");
+            TerminateProcess(this->torProxyProcess.hProcess, 0); // Terminate the proxy process - Hopefully this doesnt break anything if the proxy process is already terminated
+        }
+    }
+
 };
 
 }
