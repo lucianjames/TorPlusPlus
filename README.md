@@ -1,5 +1,11 @@
 # TorPlusPlus
-C++ header for talking to a TOR hidden service.
+Allows a C++ program to send and receive data to/from a TOR hidden service. Creates and kills the TOR process itself.
+Future versions/forks/branches/whatever of this code will probably let you embed TOR and everything into the program itself (antivirus probably wont like that, will essentially be a dropper).
+Will probably also add automatic downloading of the TOR files instead of having to put them in there manually (and suffer from potentially outdated versions!)
+
+## Still in development!
+This project only started existing a couple hours ago, lots of functionality is yet to be implemented.
+
 ## Platform support
 Currently, I have this header set up for windows exclusively. Will add linux support in the future™
 
@@ -38,11 +44,7 @@ I might make some kind of script to automate doing this, I dont want to just pla
         torProxyIP: The IP address of the proxy
         torProxyPort: The port of the proxy
 */
-torSocket(const char* torProxyIP = "127.0.0.1", // The IP address of the proxy (almost always 127.0.0.1)
-          const int torProxyPort = 9050, // The port of the proxy (almost always 9050)
-          const int waitTimeSeconds = 10, // The amount of time to wait for the proxy to start
-          const char* torPath = ".\\tor\\tor.exe" // The path to the tor.exe executable
-          )
+torSocket(const char* torPath = ".\\tor\\tor.exe", const int waitTimeSeconds = 10, const char* torProxyIP = "127.0.0.1", const int torProxyPort = 9050)
 
 /*
     torSocket destructor
