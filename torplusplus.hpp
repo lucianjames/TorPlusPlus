@@ -1,5 +1,5 @@
-
-namespace torPlusPlus{ // Slap everything in the torPlusPlus namespace
+// Everything in a namespace to prevent collisions with other code
+namespace torPlusPlus{
 
 // Cross-platform includes and defins:
 #include <stdio.h> 
