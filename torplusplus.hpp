@@ -1,17 +1,41 @@
-#pragma comment(lib, "ws2_32.lib")
-
-#define _WINSOCK_DEPRECATED_NO_WARNINGS // Disable the "deprecated" warning for inet_addr()
-// I tried using inet_pton() like the warning suggested, but it didnt work and I dont really care to fix it
-
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <stdio.h>
-#include <strsafe.h>
-
+// Everything in a namespace to prevent collisions with other code
 namespace torPlusPlus{
+
+// Cross-platform includes and defins:
+#include <stdio.h> 
 
 #define DEBUG true // Set to true to enable debug messages - Using macro instead of variable so that strings arent stored in the binary if debugging is turned off
 #define DEBUG_printf(...) if(DEBUG) printf(__VA_ARGS__) // Macro that, if DEBUG is true, will printf debug message
+
+#ifdef _WIN32 // Windows includes and defines:
+#pragma comment(lib, "ws2_32.lib")
+#define _WINSOCK_DEPRECATED_NO_WARNINGS // Disable the "deprecated" warning for inet_addr()
+// I tried using inet_pton() like the warning suggested, but it didnt work and I dont really care to fix it
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <strsafe.h>
+#include <windows.h>
+
+#else // Linux includes and defines:
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+#include <string.h>
+#include <netdb.h>
+#include <errno.h>
+#include <err.h>
+#define closesocket close
+#define SOCKET_ERROR    -1
+#define INVALID_SOCKET  -1
+#define WSACleanup() // Define cleanup to nothing on Linux
+#define WSAGetLastError() errno
+#define SOCKADDR struct sockaddr
+typedef int SOCKET;
+#endif
+// End of OS specific includes and defines
+
 
 // Use inet_pton() to check if a given const char* is an IPv6 address
 bool isIPv6(const char* ip){
@@ -44,8 +68,10 @@ const char* getSocks5Error(const int error){
 // The torSocket class
 class torSocket{
 protected:
+#ifdef _WIN32
     PROCESS_INFORMATION torProxyProcess = {0}; // This is stored so we can terminate the proxy process when the class is destroyed
     WSADATA wsaData = {0}; // Storing this isnt really necessary. Holds info about the Winsock implementation
+#endif
     SOCKET torProxySocket = {0}; // The socket used to connect to the proxy
     sockaddr_in torProxyAddr = {0}; // The address of the proxy (usually 127.0.0.1:9050)
     bool connected = false; // Whether or not we have successfully connected to the proxy and authenticated yet
@@ -68,7 +94,9 @@ public:
     ~torSocket(){ // Destructor
         closesocket(this->torProxySocket); // Close the socket
         WSACleanup(); // Cleanup Winsock
+#ifdef _WIN32
         TerminateProcess(this->torProxyProcess.hProcess, 0); // Terminate the proxy process
+#endif
     }
 
     /*
@@ -80,6 +108,7 @@ public:
             1 if the proxy process was started successfully
             0 if the proxy process failed to start
     */
+#ifdef _WIN32
     int startTorProxy(const char* torPath = ".\\tor\\tor.exe"){
         // Start the executable at torPath using CreateProcessW()
         wchar_t* lpTorPath = new wchar_t[strlen(torPath) + 1]; // Create a wchar_t* to store the path to the tor.exe executable
@@ -107,6 +136,12 @@ public:
         DEBUG_printf("startTorProxy(): Tor proxy executable started\n");
         return 1;
     }
+#else
+    int startTorProxy(const char* torPath = "."){
+        DEBUG_printf("startTorProxy(): ERR: startTorProxy() is not implemented on Linux, if TOR is already running then you can ignore this error\n");
+        return 1; // Returning success, as we hope TOR is already running!
+    }
+#endif
 
     /*
         connectToProxy()
@@ -118,12 +153,14 @@ public:
    void connectToProxy(const char* torProxyIP = "127.0.0.1",
                        const int torProxyPort = 9050
                        ){
+#ifdef _WIN32
         // Initialize Winsock
         int WSAStartupResult = WSAStartup(MAKEWORD(2, 2), &this->wsaData); // MAKEWORD(2,2) specifies version 2.2 of Winsock
         if(WSAStartupResult != 0){ // WSAStartup returns 0 on success
             DEBUG_printf("connectToProxy(): ERR: WSAStartup failed with error: %d\n", WSAStartupResult);
             return; // Abort the connection attempt if WSAStartup failed
         }
+#endif
         // === Create a SOCKET for connecting to the proxy
         this->torProxySocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); // Create a TCP socket to connect to the proxy with
         if(this->torProxySocket == INVALID_SOCKET){ // If the socket failed to create, abort the connection attempt
@@ -273,24 +310,30 @@ public:
     }
 
     /*
-        close()
+        closeTorSocket()
         Stops the proxy and closes the socket
     */
-    void close(){
+    void closeTorSocket(){ // Had to change the name of this function to avoid conflicts with close()
         if(this->connected){ // If we are connected to the proxy, close the socket and terminate the proxy process
             DEBUG_printf("close(): Closing proxy socket\n");
             closesocket(this->torProxySocket); // Close the socket
+#ifdef _WIN32
             DEBUG_printf("close(): Running WSACleanup\n");
             WSACleanup(); // Cleanup Winsock
             DEBUG_printf("close(): Terminating proxy process\n");
             if(TerminateProcess(this->torProxyProcess.hProcess, 0) == 0){ // Terminate the proxy process
                 DEBUG_printf("close(): ERR: Failed to terminate proxy process\n");
             }
+#endif
             this->connected = false; // Set this->connected to false
             this->socks5ConnectedToHost = false; // Set this->socks5ConnectedToHost to false
         }else{
+#ifdef _WIN32
             DEBUG_printf("close(): ERR: Not connected to proxy - attempting to terminate proxy process anyway\n");
             TerminateProcess(this->torProxyProcess.hProcess, 0); // Terminate the proxy process - Hopefully this doesnt break anything if the proxy process is already terminated
+#else
+            DEBUG_printf("close(): ERR: Not connected to proxy\n");
+#endif
         }
     }
 
