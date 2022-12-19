@@ -65,10 +65,20 @@ protected:
     */
     int startTorProxy(const char* torPath){ // torPath points to the tor.exe executable
         STARTUPINFO si = {0};
-        LPCWSTR torPathW = new WCHAR[strlen(torPath) + 1]; // Convert the path to a wide string
-        MultiByteToWideChar(CP_ACP, 0, torPath, -1, (LPWSTR)torPathW, strlen(torPath) + 1);
-        int createProcessResult = CreateProcess(torPathW, NULL, NULL, NULL, FALSE, 0, NULL, NULL, &si, &this->torProxyProcess); // Start the proxy executable
-        delete torPathW; // Delete the wide string version of the path
+        si.cb = sizeof(si);
+        DEBUG_printf("startTorProxy(): Starting Tor proxy executable...\n");
+        // === Start the Tor proxy executable:
+        int createProcessResult = CreateProcess(torPath, // Path to the executable
+                                                NULL, // Command line arguments - NULL means no arguments
+                                                NULL, // Process handle not inheritable
+                                                NULL, // Thread handle not inheritable
+                                                FALSE, // Set handle inheritance to FALSE
+                                                0, // No creation flags
+                                                NULL, // Use parent's environment block
+                                                NULL, // Use parent's starting directory
+                                                &si, // Pointer to STARTUPINFO structure
+                                                &this->torProxyProcess // Pointer to PROCESS_INFORMATION structure
+                                                );
         if(createProcessResult == 0){ // CreateProcess returns 0 on failure
             DEBUG_printf("startTorProxy(): ERR: CreateProcess failed: %d\n", GetLastError());
             return createProcessResult; // Return the result of CreateProcess so the caller is aware of the failure
