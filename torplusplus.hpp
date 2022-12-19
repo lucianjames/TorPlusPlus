@@ -1,9 +1,11 @@
+
+namespace torPlusPlus{ // Slap everything in the torPlusPlus namespace
+
 // Cross-platform includes and defins:
 #include <stdio.h> 
-namespace torPlusPlus{
-    #define DEBUG true // Set to true to enable debug messages - Using macro instead of variable so that strings arent stored in the binary if debugging is turned off
-    #define DEBUG_printf(...) if(DEBUG) printf(__VA_ARGS__) // Macro that, if DEBUG is true, will printf debug message
-}
+
+#define DEBUG true // Set to true to enable debug messages - Using macro instead of variable so that strings arent stored in the binary if debugging is turned off
+#define DEBUG_printf(...) if(DEBUG) printf(__VA_ARGS__) // Macro that, if DEBUG is true, will printf debug message
 
 #ifdef _WIN32 // Windows includes and defines:
 #pragma comment(lib, "ws2_32.lib")
@@ -34,7 +36,6 @@ typedef int SOCKET;
 #endif
 // End of OS specific includes and defines
 
-namespace torPlusPlus{
 
 // Use inet_pton() to check if a given const char* is an IPv6 address
 bool isIPv6(const char* ip){
