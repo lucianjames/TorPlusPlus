@@ -34,7 +34,7 @@ You can specify the path to the tor.exe executable in the torSocket constructor 
 I might make some kind of script to automate doing this, I dont want to just place the files in here as they will become outdated.
 
 
-## Public functions of the class "torSocket"
+## Public functions of the torSocket class
 ```c++
 /*
     torSocket constructor
@@ -42,34 +42,63 @@ I might make some kind of script to automate doing this, I dont want to just pla
 */
 torSocket()
 
+
 /*
     torSocket destructor
     Closes the socket, cleans up Winsock, and terminates the proxy process
 */
 ~torSocket()
 
-/*
-    startProxy()
-    Starts the Tor proxy executable and connects to it
-    Arguments:
-        torPath: The path to the tor.exe executable
-        torProxyIP: The IP address of the proxy
-        torProxyPort: The port of the proxy
-*/
-void startProxy(const char* torPath = ".\\tor\\tor.exe", // The path to the tor.exe executable
-                const char* torProxyIP = "127.0.0.1", // The IP address of the proxy (almost always 127.0.0.1)
-                const int torProxyPort = 9050 // The port of the proxy (almost always 9050)
-                )
 
 /*
-    connectTo()
-    Connects to a host through the proxy
+    startTorProxy()
+    Starts the Tor proxy executable as a separate process
+    Arguments:
+        torPath: The path to the tor.exe executable. Defaults to ".\\tor\\tor.exe"
+    Returns:
+        1 if the proxy process was started successfully
+        0 if the proxy process failed to start
+*/
+int startTorProxy(const char* torPath = ".\\tor\\tor.exe")
+
+
+/*
+    connectToProxy()
+    Connects to the Tor proxy
+    Arguments:
+        torProxyIP: The IP address of the proxy (almost always 127.0.0.1)
+        torProxyPort: The port of the proxy (almost always 9050)
+*/
+void connectToProxy(const char* torProxyIP = "127.0.0.1",
+                    const int torProxyPort = 9050)
+
+
+/*
+    startAndConnectToProxy()
+    Combines the startTorProxy() and connectToProxy() functions into one function for convenience
+    Arguments:
+        torPath: The path to the tor.exe executable
+        torProxyIP: The IP address of the proxy (almost always 127.0.0.1)
+        torProxyPort: The port of the proxy (almost always 9050)
+    Returns:
+        1 on success, 0 on failure. Uses the value of this->connected to determine success or failure if this->startTorProxy() returns 1
+*/
+int startAndConnectToProxy(const char* torPath = "\\tor\\tor.exe",
+                           const char* torProxyIP = "127.0.0.1",
+                           const int torProxyPort = 9050)
+
+
+/*
+    connectProxyTo()
+    Connects to a host through the proxy.
+    Can be passed a domain name or an IP address
     Arguments:
         host: The host to connect to
         port: The port to connect to
 */
-void connectTo(const char* host, 
-               const int port=80)
+void connectProxyTo(const char* host, 
+                    const int port=80)
+
 
 /*
     proxySend()
@@ -83,6 +112,7 @@ void connectTo(const char* host,
 int proxySend(const char* data, 
               const int len)
 
+
 /*
     proxyRecv()
     Receives data from the proxy
@@ -95,11 +125,13 @@ int proxySend(const char* data,
 int proxyRecv(char* data, 
               const int len)
 
-/*
-    proxyClose()
+
+ /*
+    close()
     Stops the proxy and closes the socket
 */
-void proxyClose()
+void close()
+
 ```
 
 ## Examples
