@@ -23,7 +23,9 @@
 namespace torPlusPlus{
 
 bool DEBUG = true; // Whether or not to print debug messages
+bool DEBUG_V = true; // Whether or not to print potentially LOTS of debug messages (send/recv)
 #define DEBUG_printf(...) if(DEBUG) printf(__VA_ARGS__) // Macro that, if DEBUG is true, will printf debug message
+#define DEBUG_V_printf(...) if(DEBUG_V) printf(__VA_ARGS__) // Macro that, if DEBUG_V is true, will printf debug message
 
 // Some define stuff for Linux:
 #ifndef _WIN32
@@ -275,9 +277,9 @@ public:
             DEBUG_printf("proxySend(): ERR: Not connected to proxy/remote host\n");
             return -1; // Return -1 to indicate an error if we are not connected to the proxy
         }
-        DEBUG_printf("proxySend(): Sending %d bytes...\n", len);
+        DEBUG_V_printf("proxySend(): Sending %d bytes...\n", len);
         int sent = send(this->torProxySocket, data, len, 0); // Just a simple send() call! Reads <len> bytes from <data> and sends them to the proxy
-        DEBUG_printf("proxySend(): Sent %d bytes\n", sent);
+        DEBUG_V_printf("proxySend(): Sent %d bytes\n", sent);
         return sent; // Return the number of bytes sent
     }
     
@@ -296,9 +298,9 @@ public:
             DEBUG_printf("proxyRecv(): ERR: Not connected to proxy\n");
             return -1; // Return -1 to indicate an error if we are not connected to the proxy
         }
-        DEBUG_printf("proxyRecv(): Receiving (up to) %d bytes...\n", len);
+        DEBUG_V_printf("proxyRecv(): Receiving (up to) %d bytes...\n", len);
         int received = recv(this->torProxySocket, data, len, 0); // Just a simple recv() call! Reads up to <len> bytes from the proxy and stores them in <data>. Data is a pointer to a buffer, so it will be modified.
-        DEBUG_printf("proxyRecv(): Received %d bytes\n", received);
+        DEBUG_V_printf("proxyRecv(): Received %d bytes\n", received);
         return received; // Return the number of bytes received
     }
 
