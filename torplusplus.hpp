@@ -22,7 +22,7 @@
 
 namespace torPlusPlus{
 
-#define DEBUG true // Set to true to enable debug messages - Using macro instead of variable so that strings arent stored in the binary if debugging is turned off
+bool DEBUG = true; // Whether or not to print debug messages
 #define DEBUG_printf(...) if(DEBUG) printf(__VA_ARGS__) // Macro that, if DEBUG is true, will printf debug message
 
 // Some define stuff for Linux:
@@ -43,7 +43,6 @@ bool isIPv6(const char* ip){
 }
 
 // Returns a string containing the error message for a given SOCKS5 error code
-#if DEBUG
 const char* getSocks5Error(const int error){
     switch(error){
         case 0x00: return "Succeeded";
@@ -58,11 +57,6 @@ const char* getSocks5Error(const int error){
         default: return "Unknown error";
     }
 }
-#else
-const char* getSocks5Error(const int error){
-    return ""; // If debugging is turned off, then we dont want to store strings for the error messages in the binary. Totally not to make it harder to reverse engineer the binary
-}
-#endif
 
 // The torSocket class
 class torSocket{
