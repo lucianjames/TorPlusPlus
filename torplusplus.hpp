@@ -206,7 +206,7 @@ public:
         Returns:
             1 on success, 0 on failure. Uses the value of this->connected to determine success or failure if this->startTorProxy() returns 1
     */
-    int startAndConnectToProxy(const char* torPath = "\\tor\\tor.exe",
+    int startAndConnectToProxy(const char* torPath = ".\\tor\\tor.exe",
                                const char* torProxyIP = "127.0.0.1",
                                const int torProxyPort = 9050
                                ){
