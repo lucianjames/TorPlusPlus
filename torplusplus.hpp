@@ -75,15 +75,15 @@ protected:
         startupInfo.cb = sizeof(startupInfo);
         ZeroMemory(&this->torProxyProcess, sizeof(this->torProxyProcess));
         BOOL success = CreateProcessW(lpTorPath, 
-                                     lpCommandLine, 
-                                     NULL, 
-                                     NULL, 
-                                     FALSE, 
-                                     0, 
-                                     lpEnvironment, 
-                                     lpCurrentDirectory, 
-                                     &startupInfo, 
-                                     &this->torProxyProcess
+                                      lpCommandLine, 
+                                      NULL, 
+                                      NULL, 
+                                      FALSE, 
+                                      0, 
+                                      lpEnvironment, 
+                                      lpCurrentDirectory, 
+                                      &startupInfo, 
+                                      &this->torProxyProcess
         );
         delete[] lpTorPath; // Delete the wchar_t* to the tor.exe executable
         if(!success){ // If CreateProcessW() failed
@@ -192,10 +192,12 @@ public:
             DEBUG_printf("connectTo(): ERR: Not connected to proxy\n");
             return; // Abort the connection attempt
         }
+        /*
         if(isIPv4(host)){
             DEBUG_printf("connectTo(): ERR: Host is an IPv4 address, this function does not support IPv4 addresses (yet(\n");
             return; // Abort the connection attempt
         }
+        */
         if(isIPv6(host)){
             DEBUG_printf("connectTo(): ERR: Host is an IPv6 address, which is not supported by the TOR SOCKS5 proxy\n");
             return; // Abort the connection attempt
