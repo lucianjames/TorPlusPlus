@@ -113,24 +113,21 @@ public:
         Starts the Tor proxy executable and connects to it
         Arguments:
             torPath: The path to the tor.exe executable
-            waitTimeSeconds: The amount of time to wait for the proxy to start (in seconds of course)
             torProxyIP: The IP address of the proxy
             torProxyPort: The port of the proxy
     */
     void startProxy(const char* torPath = ".\\tor\\tor.exe", // The path to the tor.exe executable
-                    const int waitTimeSeconds = 10, // The amount of time to wait for the proxy to start - possibly not necessary and probably not the best way to wait for the proxy to start either
                     const char* torProxyIP = "127.0.0.1", // The IP address of the proxy (almost always 127.0.0.1)
                     const int torProxyPort = 9050 // The port of the proxy (almost always 9050)
                     ){
         // === Start the proxy:
-        DEBUG_printf("torSocket(): Waiting for Tor proxy to start (%d seconds)...\n", waitTimeSeconds);
+        DEBUG_printf("torSocket(): Starting TOR proxy\n");
         int startTorProxyResult = this->startTorProxy(torPath); // Start the proxy executable as a separate process
         if(startTorProxyResult == 0){ // If the proxy failed to start, abort the connection attempt
             DEBUG_printf("torSocket(): ERR: Aborting due to failed proxy start\n");
             return;
         }
-        Sleep(waitTimeSeconds * 1000); // Sleep for the specified amount of time to allow the proxy to start
-        DEBUG_printf("torSocket(): Proxy is probably running, attempting to connect...\n");
+        DEBUG_printf("torSocket(): Proxy started. Attempting to connect to proxy (even though it probably isnt ready yet)\n");
         // === Initialize Winsock:
         int WSAStartupResult = WSAStartup(MAKEWORD(2, 2), &this->wsaData); // MAKEWORD(2,2) specifies version 2.2 of Winsock
         if(WSAStartupResult != 0){ // WSAStartup returns 0 on success
