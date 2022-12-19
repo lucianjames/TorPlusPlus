@@ -8,7 +8,8 @@ Will probably also add automatic downloading of the TOR files instead of having 
 This project only started existing a couple hours ago, lots of functionality is yet to be implemented.
 
 ## Platform support
-Currently, I have this header set up for windows exclusively. Will add linux support in the future™
+Supports both Linux and Windows, but Linux does not yet have to capability to start TOR! TOR must already be running on the system.
+
 
 ## Why?
 Hidden services are actually really easy to set up, but talking to them from a program is a bit more complicated. This library makes it easy to talk to a hidden service from a program.
