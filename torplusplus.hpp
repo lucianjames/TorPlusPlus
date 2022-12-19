@@ -1,13 +1,4 @@
-// Everything in a namespace to prevent collisions with other code
-namespace torPlusPlus{
-
-// Cross-platform includes and defins:
-#include <stdio.h> 
-
-#define DEBUG true // Set to true to enable debug messages - Using macro instead of variable so that strings arent stored in the binary if debugging is turned off
-#define DEBUG_printf(...) if(DEBUG) printf(__VA_ARGS__) // Macro that, if DEBUG is true, will printf debug message
-
-#ifdef _WIN32 // Windows includes and defines:
+#ifdef _WIN32 // Windows includes
 #pragma comment(lib, "ws2_32.lib")
 #define _WINSOCK_DEPRECATED_NO_WARNINGS // Disable the "deprecated" warning for inet_addr()
 // I tried using inet_pton() like the warning suggested, but it didnt work and I dont really care to fix it
@@ -15,8 +6,7 @@ namespace torPlusPlus{
 #include <ws2tcpip.h>
 #include <strsafe.h>
 #include <windows.h>
-
-#else // Linux includes and defines:
+#else // Linux stuff
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -26,6 +16,17 @@ namespace torPlusPlus{
 #include <netdb.h>
 #include <errno.h>
 #include <err.h>
+#endif // Any includes below here are cross-platform
+#include <stdio.h>
+
+
+namespace torPlusPlus{
+
+#define DEBUG true // Set to true to enable debug messages - Using macro instead of variable so that strings arent stored in the binary if debugging is turned off
+#define DEBUG_printf(...) if(DEBUG) printf(__VA_ARGS__) // Macro that, if DEBUG is true, will printf debug message
+
+// Some define stuff for Linux:
+#ifndef _WIN32
 #define closesocket close
 #define SOCKET_ERROR    -1
 #define INVALID_SOCKET  -1
@@ -34,8 +35,6 @@ namespace torPlusPlus{
 #define SOCKADDR struct sockaddr
 typedef int SOCKET;
 #endif
-// End of OS specific includes and defines
-
 
 // Use inet_pton() to check if a given const char* is an IPv6 address
 bool isIPv6(const char* ip){
