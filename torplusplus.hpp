@@ -212,7 +212,7 @@ public:
         char connectResp[10]; // A buffer to hold the connect response from the proxy
         recv(this->torProxySocket, connectResp, sizeof(connectResp), 0); // Receive the connect response from the proxy
         if(connectResp[1] != 0x00){ // If the proxy responded with an error, abort the connection attempt
-            DEBUG_printf("connectTo(): ERR: Proxy connection failed with error: %d: %s", connectResp[1], getSocks5Error(connectResp[1]));
+            DEBUG_printf("connectTo(): ERR: Proxy connection failed with error: %d: %s\n", connectResp[1], getSocks5Error(connectResp[1]));
             return; // Abort the connection attempt
         }
         DEBUG_printf("connectTo(): Successfully connected to %s:%d\n", host, port);
