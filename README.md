@@ -53,12 +53,10 @@ torSocket()
     Starts the Tor proxy executable and connects to it
     Arguments:
         torPath: The path to the tor.exe executable
-        waitTimeSeconds: The amount of time to wait for the proxy to start (in seconds of course)
         torProxyIP: The IP address of the proxy
         torProxyPort: The port of the proxy
 */
 void startProxy(const char* torPath = ".\\tor\\tor.exe", // The path to the tor.exe executable
-                const int waitTimeSeconds = 10, // The amount of time to wait for the proxy to start - possibly not necessary and probably not the best way to wait for the proxy to start either
                 const char* torProxyIP = "127.0.0.1", // The IP address of the proxy (almost always 127.0.0.1)
                 const int torProxyPort = 9050 // The port of the proxy (almost always 9050)
                 )
