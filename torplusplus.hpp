@@ -13,11 +13,6 @@ namespace torPlusPlus{
 #define DEBUG true // Set to true to enable debug messages - Using macro instead of variable so that strings arent stored in the binary if debugging is turned off
 #define DEBUG_printf(...) if(DEBUG) printf(__VA_ARGS__) // Macro that, if DEBUG is true, will printf debug message
 
-// Use inet_addr() to check if a given const char* is an IPv4 address
-bool isIPv4(const char* ip){
-    return inet_addr(ip) != INADDR_NONE;
-}
-
 // Use inet_pton() to check if a given const char* is an IPv6 address
 bool isIPv6(const char* ip){
     struct sockaddr_in sa;
@@ -192,12 +187,6 @@ public:
             DEBUG_printf("connectTo(): ERR: Not connected to proxy\n");
             return; // Abort the connection attempt
         }
-        /*
-        if(isIPv4(host)){
-            DEBUG_printf("connectTo(): ERR: Host is an IPv4 address, this function does not support IPv4 addresses (yet(\n");
-            return; // Abort the connection attempt
-        }
-        */
         if(isIPv6(host)){
             DEBUG_printf("connectTo(): ERR: Host is an IPv6 address, which is not supported by the TOR SOCKS5 proxy\n");
             return; // Abort the connection attempt
