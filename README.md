@@ -34,11 +34,7 @@ You can specify the path to the tor.exe executable in the torSocket constructor 
 I might make some kind of script to automate doing this, I dont want to just place the files in here as they will become outdated.
 
 
-## ❗ Problems: ❗
-* Havent got IPv4 addresses working in the connectTo() function yet
-* + more that I probably havent discovered yet
-
-## Public functions
+## Public functions of the class "torSocket"
 ```c++
 /*
     torSocket constructor
