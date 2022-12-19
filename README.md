@@ -4,8 +4,8 @@ Creates and kills the TOR process itself.
 Future versions/forks/branches/whatever of this code will probably let you embed TOR and everything into the program itself (antivirus probably wont like that, will essentially be a dropper).
 Will probably also add automatic downloading of the TOR files instead of having to put them in there manually (and suffer from potentially outdated versions!)
 
-## Still in development!
-This project only started existing a couple hours ago, lots of functionality is yet to be implemented.
+## Still in early development!
+Reasonable potential for bugs and missing features!
 
 ## Platform support
 Supports both Linux and Windows, but Linux does not yet have to capability to start TOR! TOR must already be running on the system.
@@ -20,20 +20,27 @@ Hidden services have the following advantages over regular websites:
 - ISPs and even governments cant block hidden services (easily)
 
 ## ❗ You need to manually do this: ❗
+### Windows:
 Requires the "tor" folder from the "Tor Expert Bundle" to be placed next to the executable.
-(This file can be downloaded from https://www.torproject.org/download/tor/)
 
 The steps to do this are:
-1. Download the "Tor Expert Bundle" from https://www.torproject.org/download/tor/ (Likely Windows (x86_64) unless you are a caveman)
+1. Download the "Tor Expert Bundle" from https://www.torproject.org/download/tor/ (Likely Windows (x86_64) unless you are a 32 bit caveman)
 2. Extract the tar.gz file
 3. Copy the "tor" folder (which contains the tor.exe executable) to the same folder as your executable
 4. Run your executable - it should start the tor proxy and connect to it!
 
 You can specify the path to the tor.exe executable in the torSocket constructor if you want to place it somewhere else.
 
+You may find https://github.com/LJ3D/TorEmbeddedPlusPlus interesting if you dont want to do this!
 
-I might make some kind of script to automate doing this, I dont want to just place the files in here as they will become outdated.
+### Linux:
+TOR must already be running on the system.
+**Making TorPlusPlus start TOR on Linux is TODO**
 
+The steps to do this are:
+1. Install TOR via you favourite package manager (for example, `pacman -S tor`)
+2. Start TOR by running `sudo tor`
+3. (Optional) Make TOR run as a service on startup so you dont have to manually start it every time you want to use your program. `sudo systemctl enable tor.service` (Not sure if this is a good idea or not)
 
 ## Public functions of the torSocket class
 ```c++
@@ -128,10 +135,10 @@ int proxyRecv(char* data,
 
 
  /*
-    close()
+    closeTorSocket()
     Stops the proxy and closes the socket
 */
-void close()
+void closeTorSocket()
 
 ```
 
