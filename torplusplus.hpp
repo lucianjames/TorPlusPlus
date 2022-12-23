@@ -332,6 +332,14 @@ public:
         }
     }
 
+    /*
+        getSocket()
+        Returns the socket used to connect to the proxy, allowing you to use the socket directly (in case you need to do something that this class doesn't support)
+    */
+    SOCKET getSocket(){
+        return this->torProxySocket;
+    }
+
 };
 
 }
