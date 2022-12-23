@@ -60,7 +60,7 @@ const char* getSocks5Error(const int error){
     }
 }
 
-// The torSocket class
+// The base torSocket class
 class torSocket{
 protected:
 #ifdef _WIN32
@@ -340,6 +340,32 @@ public:
         return this->torProxySocket;
     }
 
+};
+
+/*
+    torSocketExtended
+    A class that extends torSocket to add some useful functions
+*/
+class torSocketExtended : public torSocket{
+public:
+    // !!! Not suitable for binary data
+    std::string proxyRecvStrUntilNewln(){ 
+        std::string data;
+        char buffer[1024];
+        int received;
+        while((received = this->proxyRecv(buffer, sizeof(buffer))) > 0){
+            data.append(buffer, received);
+            if(data.find("\n") != std::string::npos){
+                break;
+            }
+        }
+        return data;
+    }
+
+    // !!! Not suitable for binary data
+    int proxySendStr(std::string data){
+        return this->proxySend(data.c_str(), data.length());
+    }
 };
 
 }
