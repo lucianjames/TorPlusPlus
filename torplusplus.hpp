@@ -342,6 +342,10 @@ public:
 
 };
 
+}
+
+namespace torPlusPlus{
+
 /*
     torSocketExtended
     A class that extends torSocket to add some useful functions
