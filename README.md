@@ -10,7 +10,6 @@ Reasonable potential for bugs and missing features!
 ## Platform support
 Supports both Linux and Windows, but Linux does not yet have to capability to start TOR! TOR must already be running on the system.
 
-
 ## Why?
 Hidden services are actually really easy to set up, but talking to them from a program is a bit more complicated. This library makes it easy to talk to a hidden service from a program.
 Hidden services have the following advantages over regular websites:
@@ -18,6 +17,9 @@ Hidden services have the following advantages over regular websites:
 - No need to pay for a domain name, onion addresses are free forever!
 - You dont need to port forward when hosting a hidden service
 - ISPs and even governments cant block hidden services (easily)
+
+## Examples
+See https://github.com/LJ3D/TorPlusPlusExamples for some example code
 
 ## ❗ You need to manually do this: ❗
 ### Windows:
@@ -141,10 +143,6 @@ int proxyRecv(char* data,
 void closeTorSocket()
 
 ```
-
-## Examples
-See https://github.com/LJ3D/TorPlusPlusExamples for some example code
-
 
 ## ⚠️ Security ⚠️
 ⚠️ Absolutely no guarantees on security/anonymity when using this code to talk to TOR ⚠️
