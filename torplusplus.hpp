@@ -17,7 +17,7 @@
 #include <err.h>
 #endif // Any includes below here are cross-platform
 #include <stdio.h>
-#include <string.h>
+#include <string>
 
 
 namespace torPlusPlus{
