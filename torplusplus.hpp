@@ -12,12 +12,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-#include <string.h>
 #include <netdb.h>
 #include <errno.h>
 #include <err.h>
 #endif // Any includes below here are cross-platform
 #include <stdio.h>
+#include <string.h>
 
 
 namespace torPlusPlus{
