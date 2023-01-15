@@ -33,7 +33,7 @@ The steps to do this are:
 
 You can specify the path to the tor.exe executable in the torSocket constructor if you want to place it somewhere else.
 
-You may find https://github.com/LJ3D/TorEmbeddedPlusPlus interesting if you dont want to do this!
+You may find https://github.com/LJ3D/TorRemoteAccess/tree/master/TRAClient interesting if you dont want to do this!
 
 ### Linux:
 TOR must already be running on the system.
