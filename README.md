@@ -21,6 +21,8 @@ Hidden services have the following advantages over regular websites:
 ## Examples
 See https://github.com/LJ3D/TorPlusPlusExamples for some example code
 
+See https://github.com/LJ3D/TorRemoteAccess/ for a more functional program utilising TorPlusPlus
+
 ## ❗ You need to manually do this: ❗
 ### Windows:
 Requires the "tor" folder from the "Tor Expert Bundle" to be placed next to the executable.
@@ -33,7 +35,7 @@ The steps to do this are:
 
 You can specify the path to the tor.exe executable in the torSocket constructor if you want to place it somewhere else.
 
-You may find https://github.com/LJ3D/TorRemoteAccess/tree/master/TRAClient interesting if you dont want to do this!
+See https://github.com/LJ3D/TorRemoteAccess/tree/master/TRAClient for a windows visual studio project that embeds tor.exe inside itself as a resource.
 
 ### Linux:
 TOR must already be running on the system.
