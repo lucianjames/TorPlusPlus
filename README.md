@@ -78,8 +78,11 @@ int startTorProxy(const char* torPath = ".\\tor\\tor.exe")
     Arguments:
         torProxyIP: The IP address of the proxy (almost always 127.0.0.1)
         torProxyPort: The port of the proxy (almost always 9050)
+    Returns:
+        1 on success
+        0 on error
 */
-void connectToProxy(const char* torProxyIP = "127.0.0.1",
+int connectToProxy(const char* torProxyIP = "127.0.0.1",
                     const int torProxyPort = 9050)
 
 
