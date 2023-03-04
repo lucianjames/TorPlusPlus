@@ -1,14 +1,12 @@
 # TorPlusPlus
-Allows a C++ program to send and receive data through TOR to regular or hidden services.
-Creates and kills the TOR process itself.
-Future versions/forks/branches/whatever of this code will probably let you embed TOR and everything into the program itself (antivirus probably wont like that, will essentially be a dropper).
-Will probably also add automatic downloading of the TOR files instead of having to put them in there manually (and suffer from potentially outdated versions!)
+Allows a C++ program to send and receive data through TOR, either to regular clearweb services or to hidden services via onion addresses.
+Theoretically, can be used with other SOCKS5 proxies, but only if theyre configured exactly the same way the TOR SOCKS5 proxy is.
 
-## Still in early development!
-Reasonable potential for bugs and missing features!
+## Still in development!
+I want to expand the functionality of this header, especially the `torSocketExtended` class.
 
 ## Platform support
-Supports both Linux and Windows, but Linux does not yet have to capability to start TOR! TOR must already be running on the system.
+Supports both Linux and Windows, but only windows supports starting the TOR proxy (via exe file which you must bundle yourself). TOR should be started via systemctl on linux (ideally, but just running `sudo tor` works too)
 
 ## Why?
 Hidden services are actually really easy to set up, but talking to them from a program is a bit more complicated. This library makes it easy to talk to a hidden service from a program.
@@ -20,6 +18,8 @@ Hidden services have the following advantages over regular websites:
 
 ## Examples
 See https://github.com/LJ3D/TorPlusPlusExamples for some example code
+
+See https://github.com/LJ3D/TorRemoteAccess/ for a more functional program utilising TorPlusPlus
 
 ## ❗ You need to manually do this: ❗
 ### Windows:
@@ -33,7 +33,7 @@ The steps to do this are:
 
 You can specify the path to the tor.exe executable in the torSocket constructor if you want to place it somewhere else.
 
-You may find https://github.com/LJ3D/TorEmbeddedPlusPlus interesting if you dont want to do this!
+See https://github.com/LJ3D/TorRemoteAccess/tree/master/TRAClient for a windows visual studio project that embeds tor.exe inside itself as a resource.
 
 ### Linux:
 TOR must already be running on the system.
@@ -41,8 +41,7 @@ TOR must already be running on the system.
 
 The steps to do this are:
 1. Install TOR via you favourite package manager (for example, `pacman -S tor`)
-2. Start TOR by running `sudo tor`
-3. (Optional) Make TOR run as a service on startup so you dont have to manually start it every time you want to use your program. `sudo systemctl enable tor.service` (Not sure if this is a good idea or not)
+2. Start TOR by running `sudo tor`, or `sudo systemctl start tor`. You can use `sudo systemctl enable tor` to cause tor to start at boot.
 
 ## Public functions of the torSocket class
 ```c++
@@ -63,6 +62,7 @@ torSocket()
 /*
     startTorProxy()
     Starts the Tor proxy executable as a separate process
+    Only implemented on windows !!!
     Arguments:
         torPath: The path to the tor.exe executable. Defaults to ".\\tor\\tor.exe"
     Returns:
@@ -136,13 +136,20 @@ int proxyRecv(char* data,
               const int len)
 
 
- /*
+/*
     closeTorSocket()
     Stops the proxy and closes the socket
 */
 void closeTorSocket()
 
+
+/*
+    getSocket()
+    Returns the socket used to connect to the proxy, allowing you to use the socket directly (in case you need to do something that this class doesn't support)
+*/
+SOCKET getSocket()
+
 ```
 
 ## ⚠️ Security ⚠️
-⚠️ Absolutely no guarantees on security/anonymity when using this code to talk to TOR ⚠️
+No guarantees :)
