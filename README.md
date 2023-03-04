@@ -105,8 +105,11 @@ int startAndConnectToProxy(const char* torPath = "\\tor\\tor.exe",
     Arguments:
         host: The host to connect to
         port: The port to connect to
+    Returns:
+        SOCKS5 err code (0 on success, see RFC1928 section 6)
+        Returns -1 on other failures
 */
-void connectProxyTo(const char* host, 
+int connectProxyTo(const char* host, 
                     const int port=80)
 
 
