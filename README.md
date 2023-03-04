@@ -46,20 +46,6 @@ The steps to do this are:
 ## Public functions of the torSocket class
 ```c++
 /*
-    torSocket constructor
-    Currently does nothing
-*/
-torSocket()
-
-
-/*
-    torSocket destructor
-    Closes the socket, cleans up Winsock, and terminates the proxy process
-*/
-~torSocket()
-
-
-/*
     startTorProxy()
     Starts the Tor proxy executable as a separate process
     Only implemented on windows !!!
@@ -70,8 +56,8 @@ torSocket()
         0 if the proxy process failed to start
 */
 int startTorProxy(const char* torPath = ".\\tor\\tor.exe")
-
-
+```
+```c++
 /*
     connectToProxy()
     Connects to the Tor proxy
@@ -83,9 +69,9 @@ int startTorProxy(const char* torPath = ".\\tor\\tor.exe")
         0 on error
 */
 int connectToProxy(const char* torProxyIP = "127.0.0.1",
-                    const int torProxyPort = 9050)
-
-
+                   const int torProxyPort = 9050)
+```
+```c++
 /*
     startAndConnectToProxy()
     Combines the startTorProxy() and connectToProxy() functions into one function for convenience
@@ -99,8 +85,8 @@ int connectToProxy(const char* torProxyIP = "127.0.0.1",
 int startAndConnectToProxy(const char* torPath = "\\tor\\tor.exe",
                            const char* torProxyIP = "127.0.0.1",
                            const int torProxyPort = 9050)
-
-
+```
+```c++
 /*
     connectProxyTo()
     Connects to a host through the proxy.
@@ -113,9 +99,9 @@ int startAndConnectToProxy(const char* torPath = "\\tor\\tor.exe",
         Returns -1 on other failures
 */
 int connectProxyTo(const char* host, 
-                    const int port=80)
-
-
+                   const int port=80)
+```
+```c++
 /*
     proxySend()
     Sends data through the proxy to the service we are connected to
@@ -127,8 +113,8 @@ int connectProxyTo(const char* host,
 */
 int proxySend(const char* data, 
               const int len)
-
-
+```
+```c++
 /*
     proxyRecv()
     Receives data from the proxy
@@ -140,15 +126,15 @@ int proxySend(const char* data,
 */
 int proxyRecv(char* data, 
               const int len)
-
-
+```
+```c++
 /*
     closeTorSocket()
     Stops the proxy and closes the socket
 */
 void closeTorSocket()
-
-
+```
+```c++
 /*
     getSocket()
     Returns the socket used to connect to the proxy, allowing you to use the socket directly (in case you need to do something that this class doesn't support)
