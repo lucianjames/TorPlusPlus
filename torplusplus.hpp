@@ -222,17 +222,20 @@ public:
         Arguments:
             host: The host to connect to
             port: The port to connect to
+        Returns:
+            SOCKS5 err code (0 on success, see RFC1928 section 6)
+            Returns -1 on other failures
     */
-    void connectProxyTo(const char* host, 
+    int connectProxyTo(const char* host, 
                         const int port=80){
         // === Initial checking and setup:
         if(!this->connected){ // If we are not connected to the proxy, abort the connection attempt and give an error message to the stupid developer who forgot to connect to the proxy
             DEBUG_printf("connectProxyTo(): ERR: Not connected to proxy\n");
-            return; // Abort the connection attempt
+            return -1; // Abort the connection attempt
         }
         if(isIPv6(host)){
             DEBUG_printf("connectProxyTo(): ERR: Host is an IPv6 address, which is not supported by the TOR SOCKS5 proxy\n");
-            return; // Abort the connection attempt
+            return -1;
         }
         DEBUG_printf("connectProxyTo(): Attempting to connect to %s:%d\n", host, port);
         // === Assemble a SOCKS5 connect request:
@@ -256,10 +259,11 @@ public:
         recv(this->torProxySocket, connectResp, sizeof(connectResp), 0); // Receive the connect response from the proxy
         if(connectResp[1] != 0x00){ // If the proxy responded with an error, abort the connection attempt
             DEBUG_printf("connectProxyTo(): ERR: Proxy connection failed with error: %d: %s\n", connectResp[1], getSocks5Error(connectResp[1]));
-            return; // Abort the connection attempt
+            return (int)connectResp[1]; // Return SOCKS5 err code
         }
         DEBUG_printf("connectProxyTo(): Successfully connected to %s:%d\n", host, port);
         this->socks5ConnectedToHost = true; // We have successfully connected to the host through the proxy, so set this->socks5ConnectedToHost to true
+        return 0;
     }
 
     /*
@@ -370,6 +374,8 @@ public:
     int proxySendStr(std::string data){
         return this->proxySend(data.c_str(), data.length());
     }
+
+    
 };
 
 }
