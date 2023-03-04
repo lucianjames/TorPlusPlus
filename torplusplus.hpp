@@ -144,8 +144,11 @@ public:
         Arguments:
             torProxyIP: The IP address of the proxy (almost always 127.0.0.1)
             torProxyPort: The port of the proxy (almost always 9050)
+        Returns:
+            0 on error
+            1 on success
     */
-   void connectToProxy(const char* torProxyIP = "127.0.0.1",
+    int connectToProxy(const char* torProxyIP = "127.0.0.1",
                        const int torProxyPort = 9050
                        ){
 #ifdef _WIN32
@@ -153,7 +156,7 @@ public:
         int WSAStartupResult = WSAStartup(MAKEWORD(2, 2), &this->wsaData); // MAKEWORD(2,2) specifies version 2.2 of Winsock
         if(WSAStartupResult != 0){ // WSAStartup returns 0 on success
             DEBUG_printf("connectToProxy(): ERR: WSAStartup failed with error: %d\n", WSAStartupResult);
-            return; // Abort the connection attempt if WSAStartup failed
+            return 0; // Abort the connection attempt if WSAStartup failed
         }
 #endif
         // === Create a SOCKET for connecting to the proxy
@@ -161,7 +164,7 @@ public:
         if(this->torProxySocket == INVALID_SOCKET){ // If the socket failed to create, abort the connection attempt
             DEBUG_printf("connectToProxy(): ERR: socket failed with error: %ld\n", WSAGetLastError());
             WSACleanup(); // Cleanup Winsock
-            return; // Abort the connection attempt
+            return 0;
         }
         // === Setup the proxy address structure:
         this->torProxyAddr.sin_family = AF_INET; // IPv4
@@ -173,7 +176,7 @@ public:
             DEBUG_printf("connectToProxy(): ERR: connect failed with error: %ld\n", WSAGetLastError());
             closesocket(this->torProxySocket); // Close the socket
             WSACleanup(); // Cleanup Winsock
-            return; // Abort the connection attempt
+            return 0;
         }
         DEBUG_printf("connectToProxy(): Connected to proxy at %s:%d\n", torProxyIP, torProxyPort);
         // === Authenticate with the proxy:
@@ -185,10 +188,11 @@ public:
             DEBUG_printf("connectToProxy(): ERR: Proxy authentication failed with error: %d\n", authResp[1]);
             closesocket(this->torProxySocket); // Close the socket
             WSACleanup(); // Cleanup Winsock
-            return; // Abort the connection attempt
+            return 0;
         }
         DEBUG_printf("connectToProxy(): Proxy authentication successful\n");
         this->connected = true; // We have successfully connected to the proxy and authenticated, so set this->connected to true
+        return 1;
     }
 
     /*
