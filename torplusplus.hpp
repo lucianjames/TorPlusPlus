@@ -15,6 +15,7 @@
 #include <netdb.h>
 #include <errno.h>
 #include <err.h>
+#include <cstring>
 #endif // Any includes below here are cross-platform
 #include <stdio.h>
 #include <string>
