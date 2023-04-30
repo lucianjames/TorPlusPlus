@@ -16,6 +16,8 @@
 #include <errno.h>
 #include <err.h>
 #include <cstring>
+#include <fstream>
+#include <signal.h>
 #endif // Any includes below here are cross-platform
 #include <stdio.h>
 #include <string>
@@ -67,6 +69,8 @@ protected:
 #ifdef _WIN32
     PROCESS_INFORMATION torProxyProcess = {0}; // This is stored so we can terminate the proxy process when the class is destroyed
     WSADATA wsaData = {0}; // Storing this isnt really necessary. Holds info about the Winsock implementation
+#else
+    pid_t torProxyProcess = 0; // This is stored so we can terminate the proxy process when the class is destroyed
 #endif
     SOCKET torProxySocket = {0}; // The socket used to connect to the proxy
     sockaddr_in torProxyAddr = {0}; // The address of the proxy (usually 127.0.0.1:9050)
@@ -82,6 +86,8 @@ public:
         WSACleanup(); // Does some "cleaup" stuff on Windows
 #ifdef _WIN32
         TerminateProcess(this->torProxyProcess.hProcess, 0); // Terminates the proxy process
+#else
+        kill(this->torProxyProcess, SIGTERM); // Terminates the proxy process
 #endif
     }
 
@@ -122,9 +128,34 @@ public:
         return 1;
     }
 #else
-    int startTorProxy(const char* torPath = "."){
-        DEBUG_printf("startTorProxy(): ERR: startTorProxy() is not implemented on Linux, if TOR is already running then you can ignore this error\n");
-        return 1; // Returning success, as we hope TOR is already running!
+    int startTorProxy(const char* torPath = ".", const int torPort = 9050){
+        FILE* torTest = popen("tor --version", "r"); // Check if TOR can be run from the command line
+        if(torTest == NULL){
+            DEBUG_printf("startTorProxy(): ERR: Failed to run TOR from command line\n");
+            return 0;
+        }
+        pclose(torTest);
+        std::ofstream torrcFile(".\\tpptorrc"); // Create an empty torrc file to ensure that TOR uses the default settings
+        torrcFile.close();
+        this->torProxyProcess = fork();
+        if(this->torProxyProcess == 0){ // If inside the child process
+            DEBUG_printf("startTorProxy(): Starting TOR\n");
+            execlp("tor", "tor", "-f", ".\\tpptorrc", NULL);
+            DEBUG_printf("startTorProxy(): ERR: Failed to start TOR\n");
+            return 0;
+        }
+        // === Wait for TOR to start by attempting a connection to 127.0.0.1:torPort every 250ms until it succeeds
+        DEBUG_printf("startTorProxy(): Waiting for TOR to start\n");
+        int torProxyTestSocket = socket(AF_INET, SOCK_STREAM, 0);
+        this->torProxyAddr.sin_family = AF_INET;
+        this->torProxyAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+        this->torProxyAddr.sin_port = htons(torPort);
+        while(connect(torProxyTestSocket, (struct sockaddr*)&this->torProxyAddr, sizeof(this->torProxyAddr)) != 0){
+            usleep(250000);
+        }
+        close(torProxyTestSocket);
+        DEBUG_printf("startTorProxy(): TOR started\n");
+        return 1;
     }
 #endif
 
