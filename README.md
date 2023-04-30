@@ -6,7 +6,7 @@ Theoretically, can be used with other SOCKS5 proxies, but only if theyre configu
 I want to expand the functionality of this header, especially the `torSocketExtended` class.
 
 ## Platform support
-Supports both Linux and Windows, but only windows supports starting the TOR proxy (via exe file which you must bundle yourself). TOR should be started via systemctl on linux (ideally, but just running `sudo tor` works too)
+Linux+Windows
 
 ## Why?
 Hidden services are actually really easy to set up, but talking to them from a program is a bit more complicated. This library makes it easy to talk to a hidden service from a program.
@@ -36,19 +36,18 @@ You can specify the path to the tor.exe executable in the torSocket constructor 
 See https://github.com/LJ3D/TorRemoteAccess/tree/master/TRAClient for a windows visual studio project that embeds tor.exe inside itself as a resource.
 
 ### Linux:
-TOR must already be running on the system.
-**Making TorPlusPlus start TOR on Linux is TODO**
+TOR must already be installed on the system.
 
 The steps to do this are:
 1. Install TOR via you favourite package manager (for example, `pacman -S tor`)
 2. Start TOR by running `sudo tor`, or `sudo systemctl start tor`. You can use `sudo systemctl enable tor` to cause tor to start at boot.
+3. OR use the `startTorProxy()` or `startAndConnectToProxy()` functions
 
 ## Public functions of the torSocket class
 ```c++
 /*
     startTorProxy()
     Starts the Tor proxy executable as a separate process
-    Only implemented on windows !!!
     Arguments:
         torPath: The path to the tor.exe executable. Defaults to ".\\tor\\tor.exe"
     Returns:
