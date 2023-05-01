@@ -22,12 +22,11 @@ void clientRecvThread(int sock){
 }
 
 int main(){
-    torPlusPlus::TOR tor(9051, ".tpptorrc", true); // port 9050, create config file at "./tpptorrc", enable logging, and use "./tor" as the path to the tor binary
+    torPlusPlus::TOR tor(9051, ".tpptorrc", true); // port 9051, create config file at "./tpptorrc", enable logging, and use "./tor" as the path to the tor binary
     // NOTE: The config file will be "cleared" (deleted), so dont accidentally set the path to anything important!
     // Create a service that listens on port 80 and forwards all traffic to port 8081
     tor.addService("./testService", 80, 8081);
     tor.start();
-
     // Create a socket that listens on port 8081 and prints anything it receives to stdout
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in addr;
