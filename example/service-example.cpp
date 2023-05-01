@@ -45,8 +45,8 @@ int main(){
     // Create a service that listens on port 80 and forwards all traffic to port 8081
     tor.addService("./testService", 80, 8081);
     tor.start();
-    WSADATA wsaData = {0};
 #ifdef _WIN32
+        WSADATA wsaData = {0};
         int WSAStartupResult = WSAStartup(MAKEWORD(2, 2), &wsaData); // MAKEWORD(2,2) specifies version 2.2 of Winsock
 #endif
     SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);

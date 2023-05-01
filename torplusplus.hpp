@@ -18,6 +18,7 @@
 #include <cstring>
 #include <fstream>
 #include <signal.h>
+#include <stdarg.h>
 #endif // Any includes below here are cross-platform
 #include <stdio.h>
 #include <string>
