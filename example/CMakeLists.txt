@@ -4,4 +4,6 @@ project(TorPlusPlusQuickExamples)
 
 add_executable(client-example client-example.cpp)
 
+add_executable(client-example-multi client-example-multi.cpp)
+
 add_executable(service-example service-example.cpp)
