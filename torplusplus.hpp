@@ -30,11 +30,13 @@ namespace torPlusPlus{
 #define SOCKADDR struct sockaddr
 typedef int SOCKET;
 
+
 // Use inet_pton() to check if a given const char* is an IPv6 address
 bool isIPv6(const char* ip){
     struct sockaddr_in sa;
     return inet_pton(AF_INET6, ip, &(sa.sin_addr)) != 0;
 }
+
 
 // Returns a string containing the error message for a given SOCKS5 error code
 const char* getSocks5Error(const int error){
@@ -51,6 +53,7 @@ const char* getSocks5Error(const int error){
         default: return "Unknown error";
     }
 }
+
 
 class TORSocket{
 protected:
@@ -281,6 +284,9 @@ protected:
         // === Create a new torrc file and set the SocksPort to the port specified in this->torPort
         std::ofstream torrcFile(this->torrcPath);
         torrcFile << "SocksPort " << this->torPort << std::endl;
+        if(!this->debug){
+            torrcFile << "Log notice file /dev/null" << std::endl;
+        }
         torrcFile.close();
     }
 
