@@ -100,7 +100,7 @@ public:
         // === Create a SOCKET for connecting to the proxy
         this->torProxySocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if(this->torProxySocket == INVALID_SOCKET){ // If the socket failed to create, abort the connection attempt
-            this->DEBUG_printf("connectToProxy(): ERR: socket failed with error: %ld\n", WSAGetLastError());
+            this->DEBUG_printf("TORSocket::connectToProxy(): ERR: socket failed with error: %ld\n", WSAGetLastError());
             WSACleanup();
             return -1;
         }
@@ -111,24 +111,24 @@ public:
         // === Connect to the proxy:
         int connectResult = connect(this->torProxySocket, (SOCKADDR*)&this->torProxyAddr, sizeof(this->torProxyAddr));
         if(connectResult == SOCKET_ERROR){ // If the connection failed, abort the connection attempt
-            this->DEBUG_printf("connectToProxy(): ERR: connect failed with error: %ld\n", WSAGetLastError());
+            this->DEBUG_printf("TORSocket::connectToProxy(): ERR: connect failed with error: %ld\n", WSAGetLastError());
             closesocket(this->torProxySocket);
             WSACleanup();
             return -1;
         }
-        this->DEBUG_printf("connectToProxy(): Connected to proxy at %s:%d\n", torProxyIP, torProxyPort);
+        this->DEBUG_printf("TORSocket::connectToProxy(): Connected to proxy at %s:%d\n", torProxyIP, torProxyPort);
         // === Authenticate with the proxy:
         char authReq[3] = {0x05, 0x01, 0x00}; // SOCKS5, 1 auth method, no auth
         send(this->torProxySocket, authReq, sizeof(authReq), 0);
         char authResp[2]; // 2 chars is enough for the response, the second char is the error code.
         recv(this->torProxySocket, authResp, sizeof(authResp), 0);
         if(authResp[1] != 0x00){ // 0x00 indicates success, anything else is an error
-            this->DEBUG_printf("connectToProxy(): ERR: Proxy authentication failed with error: %d\n", authResp[1]);
+            this->DEBUG_printf("TORSocket::connectToProxy(): ERR: Proxy authentication failed with error: %d\n", authResp[1]);
             closesocket(this->torProxySocket);
             WSACleanup();
             return -1;
         }
-        this->DEBUG_printf("connectToProxy(): Proxy authentication successful\n");
+        this->DEBUG_printf("TORSocket::connectToProxy(): Proxy authentication successful\n");
         this->connected = true; // We have successfully connected to the proxy and authenticated, so set this->connected to true
         // this->connected is used to ensure that a connection is established before attempting to send data through the proxy
         return 0;
@@ -148,14 +148,14 @@ public:
                        const int port=80){
         // === Initial checking and setup:
         if(!this->connected){ // If we are not connected to the proxy, abort the connection attempt and give an error message to the stupid developer who forgot to connect to the proxy
-            this->DEBUG_printf("connectProxyTo(): ERR: Not connected to proxy\n");
+            this->DEBUG_printf("TORSocket::connectProxyTo(): ERR: Not connected to proxy\n");
             return -1;
         }
         if(isIPv6(host)){
-            this->DEBUG_printf("connectProxyTo(): ERR: Host is an IPv6 address, which is not supported by the TOR SOCKS5 proxy\n");
+            this->DEBUG_printf("TORSocket::connectProxyTo(): ERR: Host is an IPv6 address, which is not supported by the TOR SOCKS5 proxy\n");
             return -1;
         }
-        this->DEBUG_printf("connectProxyTo(): Attempting to connect to %s:%d\n", host, port);
+        this->DEBUG_printf("TORSocket::connectProxyTo(): Attempting to connect to %s:%d\n", host, port);
         // === Assemble a SOCKS5 connect request:
         char hostLen = (char)strlen(host); // Get the length of the domain, as a char so it can be sent as a single byte
         char* connectReq = new char[7 + hostLen]; // 7 bytes for the SOCKS5 header, plus the length of the domain
@@ -168,18 +168,18 @@ public:
         short portN = htons(port); // Convert the port to network byte order.
         memcpy(connectReq + 5 + hostLen, &portN, 2); // Copy the port into the connect request, starting at byte <domain length> + 5
         // === Send the connect request:
-        this->DEBUG_printf("connectProxyTo(): Sending connect request to proxy\n");
+        this->DEBUG_printf("TORSocket::connectProxyTo(): Sending connect request to proxy\n");
         send(this->torProxySocket, connectReq, 7 + hostLen, 0); // Send the connect request to the proxy // TODO: ERROR CHECKING
         delete[] connectReq; // Free the memory used to store the connect request
         // === Get the connect response:
-        this->DEBUG_printf("connectProxyTo(): Waiting for connect response from proxy...\n");
+        this->DEBUG_printf("TORSocket::connectProxyTo(): Waiting for connect response from proxy...\n");
         char connectResp[10]; // A buffer to hold the connect response from the proxy
         recv(this->torProxySocket, connectResp, sizeof(connectResp), 0); // Receive the connect response from the proxy
         if(connectResp[1] != 0x00){ // If the proxy responded with an error, abort the connection attempt
-            this->DEBUG_printf("connectProxyTo(): ERR: Proxy connection failed with error: %d: %s\n", connectResp[1], getSocks5Error(connectResp[1]));
+            this->DEBUG_printf("TORSocket::connectProxyTo(): ERR: Proxy connection failed with error: %d: %s\n", connectResp[1], getSocks5Error(connectResp[1]));
             return (int)connectResp[1]; // Return SOCKS5 err code
         }
-        this->DEBUG_printf("connectProxyTo(): Successfully connected to %s:%d\n", host, port);
+        this->DEBUG_printf("TORSocket::connectProxyTo(): Successfully connected to %s:%d\n", host, port);
         this->socks5ConnectedToHost = true; // We have successfully connected to the host through the proxy, so set this->socks5ConnectedToHost to true
         return 0;
     }
@@ -195,7 +195,7 @@ public:
     int proxySend(const char* data, 
                   const int len){
         if(!(this->connected && this->socks5ConnectedToHost)){ // Ensure that we are connected to the proxy and to the host through the proxy
-            this->DEBUG_printf("proxySend(): ERR: Not connected to proxy/remote host\n");
+            this->DEBUG_printf("TORSocket::proxySend(): ERR: Not connected to proxy/remote host\n");
             return -1;
         }
         //DEBUG_V_printf("proxySend(): Sending %d bytes...\n", len);
@@ -222,7 +222,7 @@ public:
     int proxyRecv(char* data, 
                   const int len){
         if(!(this->connected && this->socks5ConnectedToHost)){  // Ensure that we are connected to the proxy and to the host through the proxy
-            this->DEBUG_printf("proxyRecv(): ERR: Not connected to proxy\n");
+            this->DEBUG_printf("TORSocket::proxyRecv(): ERR: Not connected to proxy\n");
             return -1;
         }
         //DEBUG_V_printf("proxyRecv(): Receiving (up to) %d bytes...\n", len);
@@ -255,7 +255,7 @@ protected:
 
     void waitForProxy(){
         // === Wait for TOR to start by attempting a connection to 127.0.0.1:torPort every 250ms until it succeeds
-        this->DEBUG_printf("waitForProxy(): Waiting for TOR\n");
+        this->DEBUG_printf("TOR::waitForProxy(): Waiting for TOR\n");
         int torProxyTestSocket = socket(AF_INET, SOCK_STREAM, 0); // Not using the SOCKET typedef because this version of this function wont be running on windows
         sockaddr_in torProxyTestAddr = {0};
         torProxyTestAddr.sin_family = AF_INET;
@@ -265,7 +265,7 @@ protected:
             usleep(250000);
         }
         close(torProxyTestSocket);
-        this->DEBUG_printf("waitForProxy(): Done\n");
+        this->DEBUG_printf("TOR::waitForProxy(): Done\n");
     }
 
     /*
@@ -277,20 +277,20 @@ protected:
     int startTorProxy(){
         FILE* torTest = popen("tor --version", "r"); // Check if TOR can be run from the command line
         if(torTest == NULL){
-            this->DEBUG_printf("startTorProxy(): ERR: Failed to run TOR from command line\n");
+            this->DEBUG_printf("TOR::startTorProxy(): ERR: Failed to run TOR from command line\n");
             return -1;
         }
         pclose(torTest);
+        this->DEBUG_printf("TOR::startTorProxy(): Starting TOR\n");
         this->torProxyProcess = fork();
         if(this->torProxyProcess == 0){ // If inside the child process
-            this->DEBUG_printf("startTorProxy(): Starting TOR\n");
             execlp("tor", "tor", "-f", this->torrcPath.c_str(), NULL);
-            this->DEBUG_printf("startTorProxy(): ERR: Failed to start TOR\n");
+            this->DEBUG_printf("TOR::startTorProxy(): ERR: Failed to start TOR\n");
             return -1;
         }
         // === Wait for TOR to start
         this->waitForProxy();
-        this->DEBUG_printf("startTorProxy(): TOR started\n");
+        this->DEBUG_printf("TOR::startTorProxy(): TOR started\n");
         return 0;
     }
 
@@ -301,16 +301,16 @@ protected:
             -1 on failure
     */
     int startTorProxyFromFile(){
+        this->DEBUG_printf("TOR::startTorProxyFromFile(): Starting TOR\n");
         this->torProxyProcess = fork();
         if(this->torProxyProcess == 0){
-            this->DEBUG_printf("startTorProxyFromFile(): Starting TOR\n");
             execlp(this->torExePath.c_str(), this->torExePath.c_str(), "-f", this->torrcPath.c_str(), NULL);
-            this->DEBUG_printf("startTorProxyFromFile(): ERR: Failed to start TOR\n");
+            this->DEBUG_printf("TOR::startTorProxyFromFile(): ERR: Failed to start TOR\n");
             return -1;
         }
         // === Wait for TOR to start
         this->waitForProxy();
-        this->DEBUG_printf("startTorProxy(): TOR started\n");
+        this->DEBUG_printf("TOR::startTorProxy(): TOR started\n");
         return 0;
     }
 
@@ -363,8 +363,8 @@ public:
             -1 on failure
     */
     int stop(){
+        this->DEBUG_printf("TOR::stop(): Stopping TOR\n");
         if(this->proxyRunning){
-            this->DEBUG_printf("stop(): Stopping TOR\n");
             kill(this->torProxyProcess, SIGTERM);
             this->proxyRunning = false;
         }
@@ -378,11 +378,12 @@ public:
             -1 on failure
     */
     int start(){
+        this->DEBUG_printf("TOR::start(): Starting TOR\n");
         if(!this->proxyRunning){
             this->proxyRunning = true;
             return this->startTorProxy();
         }else{
-            this->DEBUG_printf("start(): ERR: TOR proxy already running\n");
+            this->DEBUG_printf("TOR::start(): ERR: TOR proxy already running\n");
             return -1;
         }
     }
@@ -394,11 +395,12 @@ public:
             -1 on failure
     */
     int startFromFile(){
+        this->DEBUG_printf("TOR::startFromFile(): Starting TOR\n");
         if(!this->proxyRunning){
             this->proxyRunning = true;
             return this->startTorProxyFromFile();
         }else{
-            this->DEBUG_printf("startFromFile(): ERR: TOR proxy already running\n");
+            this->DEBUG_printf("TOR::startFromFile(): ERR: TOR proxy already running\n");
             return -1;
         }
     }
@@ -410,6 +412,7 @@ public:
             -1 on failure
     */
     int restart(){
+        this->DEBUG_printf("TOR::restart(): Restarting TOR\n");
         this->stop();
         return this->start();
     }
@@ -427,12 +430,12 @@ public:
     */
     int addService(const std::string& servicePath, const int serviceTORPort, const int servicePort){
         if(this->proxyRunning){
-            this->DEBUG_printf("addService(): WARN: Service will not be accessible until TOR is restarted\n");
+            this->DEBUG_printf("TOR::addService(): WARN: Service will not be accessible until TOR is restarted\n");
         }
         std::ofstream torrcFile(this->torrcPath, std::ios_base::app);
         torrcFile << "HiddenServiceDir " << servicePath << std::endl;
         // HiddenServicePort x y:z says to redirect requests on port x to the address y:z.
-        torrcFile << "HiddenServicePort " << serviceTORPort << "127.0.0.1:" << servicePort << std::endl;
+        torrcFile << "HiddenServicePort " << serviceTORPort << " 127.0.0.1:" << servicePort << std::endl;
         torrcFile.close();
         return 0;
     }
