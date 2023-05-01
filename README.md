@@ -1,3 +1,6 @@
+# See the rewrite-linux-windows branch!
+https://github.com/LJ3D/TorPlusPlus/tree/rewrite-linux-windows
+
 # TorPlusPlus
 Allows a C++ program to send and receive data through TOR, either to regular clearweb services or to hidden services via onion addresses.
 Theoretically, can be used with other SOCKS5 proxies, but only if theyre configured exactly the same way the TOR SOCKS5 proxy is.
