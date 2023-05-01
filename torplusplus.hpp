@@ -12,7 +12,6 @@
 #include <iostream>
 #include <stdarg.h>
 
-
 /*
 
     REWRITING ON LINUX ONLY FOR NOW
@@ -20,8 +19,8 @@
 
 */
 
-
 namespace torPlusPlus{
+
 
 #define closesocket close
 #define SOCKET_ERROR    -1
@@ -52,7 +51,6 @@ const char* getSocks5Error(const int error){
         default: return "Unknown error";
     }
 }
-
 
 class TORSocket{
 protected:
@@ -197,6 +195,13 @@ public:
         int sent = send(this->torProxySocket, data, len, 0);
         //DEBUG_V_printf("proxySend(): Sent %d bytes\n", sent);
         return sent;
+    }
+    
+    /*
+        Overload to send std::strings without doing .c_str() and .length() every time
+    */
+    int proxySend(std::string data){
+        return this->proxySend(data.c_str(), data.length());
     }
     
     /*
