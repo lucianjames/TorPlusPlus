@@ -6,7 +6,7 @@
 #define HOST "cryptbbtg65gibadeeo2awe3j7s6evg7eklserehqr4w4e2bis5tebid.onion"
 
 int main(){
-    torPlusPlus::TOR tor(9051, ".tpptorrc", true); // port 9050, create config file at "./tpptorrc", enable logging, and use "./tor" as the path to the tor binary
+    torPlusPlus::TOR tor(9051, ".tpptorrc", true); // port 9051, create config file at "./tpptorrc", enable logging
     // NOTE: The config file will be "cleared" (deleted), so dont accidentally set the path to anything important!
     tor.start(); // Start the tor binary
     torPlusPlus::TORSocket ts = tor.getSocket(); // Get a pre-configured socket that is already connected to the "tor" instance
