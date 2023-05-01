@@ -1,12 +1,3 @@
-#ifdef _WIN32 // Windows includes
-#pragma comment(lib, "ws2_32.lib")
-#define _WINSOCK_DEPRECATED_NO_WARNINGS // Disable the "deprecated" warning for inet_addr()
-// I tried using inet_pton() like the warning suggested, but it didnt work and I dont really care to fix it
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#include <strsafe.h>
-#include <windows.h>
-#else // Linux stuff
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -18,20 +9,20 @@
 #include <cstring>
 #include <fstream>
 #include <signal.h>
-#endif // Any includes below here are cross-platform
-#include <stdio.h>
-#include <string>
+#include <iostream>
+#include <stdarg.h>
+
+
+/*
+
+    REWRITING ON LINUX ONLY FOR NOW
+    WILL ADD WINDOWS SUPPORT LATER
+
+*/
 
 
 namespace torPlusPlus{
 
-bool DEBUG = true; // Whether or not to print debug messages
-bool DEBUG_V = true; // Whether or not to print potentially LOTS of debug messages (send/recv)
-#define DEBUG_printf(...) if(DEBUG) printf(__VA_ARGS__) // Macro that, if DEBUG is true, will printf debug message
-#define DEBUG_V_printf(...) if(DEBUG_V) printf(__VA_ARGS__) // Macro that, if DEBUG_V is true, will printf debug message
-
-// Some define stuff for Linux:
-#ifndef _WIN32
 #define closesocket close
 #define SOCKET_ERROR    -1
 #define INVALID_SOCKET  -1
@@ -39,7 +30,6 @@ bool DEBUG_V = true; // Whether or not to print potentially LOTS of debug messag
 #define WSAGetLastError() errno
 #define SOCKADDR struct sockaddr
 typedef int SOCKET;
-#endif
 
 // Use inet_pton() to check if a given const char* is an IPv6 address
 bool isIPv6(const char* ip){
@@ -63,101 +53,30 @@ const char* getSocks5Error(const int error){
     }
 }
 
-// The base torSocket class
-class torSocket{
+
+class TORSocket{
 protected:
-#ifdef _WIN32
-    PROCESS_INFORMATION torProxyProcess = {0}; // This is stored so we can terminate the proxy process when the class is destroyed
-    WSADATA wsaData = {0}; // Storing this isnt really necessary. Holds info about the Winsock implementation
-#else
-    pid_t torProxyProcess = 0; // This is stored so we can terminate the proxy process when the class is destroyed
-#endif
-    SOCKET torProxySocket = {0}; // The socket used to connect to the proxy
-    sockaddr_in torProxyAddr = {0}; // The address of the proxy (usually 127.0.0.1:9050)
-    bool connected = false; // Whether or not we have successfully connected to the proxy and authenticated yet
-    bool socks5ConnectedToHost = false; // Whether or not we have successfully connected to the host through the proxy
-    
-public:
-    /*
-        Closes the socket, cleans up Winsock, and terminates the proxy process
-    */
-    ~torSocket(){
-        closesocket(this->torProxySocket);
-        WSACleanup(); // Does some "cleaup" stuff on Windows
-#ifdef _WIN32
-        TerminateProcess(this->torProxyProcess.hProcess, 0); // Terminates the proxy process
-#else
-        kill(this->torProxyProcess, SIGTERM); // Terminates the proxy process
-#endif
+    SOCKET torProxySocket = {0};
+    sockaddr_in torProxyAddr = {0};
+
+    bool debug = false;
+    bool connected = false;
+    bool socks5ConnectedToHost = false;
+
+    void DEBUG_printf(const char* format, ...){
+        if(this->debug){
+            va_list args;
+            va_start(args, format);
+            vprintf(format, args);
+            va_end(args);
+        }
     }
 
-    /*
-        startTorProxy()
-        Starts the Tor proxy executable as a separate process
-        Arguments:
-            torPath: The path to the tor.exe executable. Defaults to ".\\tor\\tor.exe"
-        Returns:
-            1 if the proxy process was started successfully
-            0 if the proxy process failed to start
-    */
-#ifdef _WIN32
-    int startTorProxy(const char* torPath = ".\\tor\\tor.exe"){
-        wchar_t* lpTorPath = new wchar_t[strlen(torPath) + 1]; // Create a wchar_t* to store the path to the tor.exe executable
-        mbstowcs_s(NULL, lpTorPath, strlen(torPath) + 1, torPath, strlen(torPath) + 1); // Converts the path to the tor.exe executable to a wchar_t*
-        STARTUPINFOW startupInfo;
-        ZeroMemory(&startupInfo, sizeof(startupInfo));
-        startupInfo.cb = sizeof(startupInfo);
-        ZeroMemory(&this->torProxyProcess, sizeof(this->torProxyProcess));
-        BOOL success = CreateProcessW(lpTorPath, 
-                                      NULL, 
-                                      NULL, 
-                                      NULL, 
-                                      FALSE, 
-                                      0, 
-                                      NULL, 
-                                      NULL, 
-                                      &startupInfo, 
-                                      &this->torProxyProcess
-        );
-        delete[] lpTorPath; // Free the memory allocated for the path
-        if(!success){ // If CreateProcessW() failed
-            DEBUG_printf("startTorProxy(): ERR: CreateProcessW failed: %d\n", GetLastError());
-            return 0; // Return 0 to indicate failure
-        }
-        DEBUG_printf("startTorProxy(): Tor proxy executable started\n");
-        return 1;
+public:
+
+    TORSocket(const bool debug = false){
+        this->debug = debug;
     }
-#else
-    int startTorProxy(const char* torPath = ".", const int torPort = 9050){
-        FILE* torTest = popen("tor --version", "r"); // Check if TOR can be run from the command line
-        if(torTest == NULL){
-            DEBUG_printf("startTorProxy(): ERR: Failed to run TOR from command line\n");
-            return 0;
-        }
-        pclose(torTest);
-        std::ofstream torrcFile(".\\tpptorrc"); // Create an empty torrc file to ensure that TOR uses the default settings
-        torrcFile.close();
-        this->torProxyProcess = fork();
-        if(this->torProxyProcess == 0){ // If inside the child process
-            DEBUG_printf("startTorProxy(): Starting TOR\n");
-            execlp("tor", "tor", "-f", ".\\tpptorrc", NULL);
-            DEBUG_printf("startTorProxy(): ERR: Failed to start TOR\n");
-            return 0;
-        }
-        // === Wait for TOR to start by attempting a connection to 127.0.0.1:torPort every 250ms until it succeeds
-        DEBUG_printf("startTorProxy(): Waiting for TOR to start\n");
-        int torProxyTestSocket = socket(AF_INET, SOCK_STREAM, 0);
-        this->torProxyAddr.sin_family = AF_INET;
-        this->torProxyAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-        this->torProxyAddr.sin_port = htons(torPort);
-        while(connect(torProxyTestSocket, (struct sockaddr*)&this->torProxyAddr, sizeof(this->torProxyAddr)) != 0){
-            usleep(250000);
-        }
-        close(torProxyTestSocket);
-        DEBUG_printf("startTorProxy(): TOR started\n");
-        return 1;
-    }
-#endif
 
     /*
         connectToProxy()
@@ -169,17 +88,9 @@ public:
             1 on success
             0 on error
     */
-    int connectToProxy(const char* torProxyIP = "127.0.0.1",
-                       const int torProxyPort = 9050
+    int connectToProxy(const int torProxyPort = 9050,
+                       const char* torProxyIP = "127.0.0.1"
                        ){
-#ifdef _WIN32
-        // Initialize Winsock
-        int WSAStartupResult = WSAStartup(MAKEWORD(2, 2), &this->wsaData); // MAKEWORD(2,2) specifies version 2.2 of Winsock
-        if(WSAStartupResult != 0){ // WSAStartup returns 0 on success
-            DEBUG_printf("connectToProxy(): ERR: WSAStartup failed with error: %d\n", WSAStartupResult);
-            return 0;
-        }
-#endif
         // === Create a SOCKET for connecting to the proxy
         this->torProxySocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
         if(this->torProxySocket == INVALID_SOCKET){ // If the socket failed to create, abort the connection attempt
@@ -218,30 +129,6 @@ public:
     }
 
     /*
-        startAndConnectToProxy()
-        Combines the startTorProxy() and connectToProxy() functions into one function for convenience
-        Arguments:
-            torPath: The path to the tor.exe executable
-            torProxyIP: The IP address of the proxy (almost always 127.0.0.1)
-            torProxyPort: The port of the proxy (almost always 9050)
-        Returns:
-            1 on success, 0 on failure. Uses the value of this->connected to determine success or failure if this->startTorProxy() returns 1
-    */
-    int startAndConnectToProxy(const char* torPath = ".\\tor\\tor.exe",
-                               const char* torProxyIP = "127.0.0.1",
-                               const int torProxyPort = 9050
-                               ){
-        // === Start the Tor proxy:
-        if(!this->startTorProxy(torPath)){ // If the Tor proxy failed to start, abort the connection attempt
-            DEBUG_printf("startAndConnectToProxy(): ERR: Tor proxy failed to start\n");
-            return 0;
-        }
-        // === Connect to the proxy:
-        this->connectToProxy(torProxyIP, torProxyPort);
-        return this->connected; // Return the value of this->connected to indicate success or failure
-    }
-
-    /*
         connectProxyTo()
         Connects to a host through the proxy.
         Can be passed a domain name or an IP address
@@ -253,7 +140,7 @@ public:
             Returns -1 on other failures
     */
     int connectProxyTo(const char* host, 
-                        const int port=80){
+                       const int port=80){
         // === Initial checking and setup:
         if(!this->connected){ // If we are not connected to the proxy, abort the connection attempt and give an error message to the stupid developer who forgot to connect to the proxy
             DEBUG_printf("connectProxyTo(): ERR: Not connected to proxy\n");
@@ -307,9 +194,9 @@ public:
             DEBUG_printf("proxySend(): ERR: Not connected to proxy/remote host\n");
             return -1;
         }
-        DEBUG_V_printf("proxySend(): Sending %d bytes...\n", len);
+        //DEBUG_V_printf("proxySend(): Sending %d bytes...\n", len);
         int sent = send(this->torProxySocket, data, len, 0);
-        DEBUG_V_printf("proxySend(): Sent %d bytes\n", sent);
+        //DEBUG_V_printf("proxySend(): Sent %d bytes\n", sent);
         return sent;
     }
     
@@ -328,79 +215,135 @@ public:
             DEBUG_printf("proxyRecv(): ERR: Not connected to proxy\n");
             return -1;
         }
-        DEBUG_V_printf("proxyRecv(): Receiving (up to) %d bytes...\n", len);
+        //DEBUG_V_printf("proxyRecv(): Receiving (up to) %d bytes...\n", len);
         int received = recv(this->torProxySocket, data, len, 0);
-        DEBUG_V_printf("proxyRecv(): Received %d bytes\n", received);
+        //DEBUG_V_printf("proxyRecv(): Received %d bytes\n", received);
         return received;
     }
 
-    /*
-        closeTorSocket()
-        Stops the proxy and closes the socket
-    */
-    void closeTorSocket(){ // Had to change the name of this function to avoid conflicts with close()
-        if(this->connected){ // If we are connected to the proxy, close the socket and terminate the proxy process
-            DEBUG_printf("close(): Closing proxy socket\n");
-            closesocket(this->torProxySocket);
-#ifdef _WIN32
-            DEBUG_printf("close(): Running WSACleanup\n");
-            WSACleanup();
-            DEBUG_printf("close(): Terminating proxy process\n");
-            if(TerminateProcess(this->torProxyProcess.hProcess, 0) == 0){
-                DEBUG_printf("close(): ERR: Failed to terminate proxy process\n");
-            }
-#endif
-            this->connected = false; // Set this->connected to false
-            this->socks5ConnectedToHost = false; // Set this->socks5ConnectedToHost to false
-        }else{ // Otherwise just attempt to terminate the proxy process (if on windows)
-#ifdef _WIN32
-            DEBUG_printf("close(): ERR: Not connected to proxy - attempting to terminate proxy process anyway\n");
-            TerminateProcess(this->torProxyProcess.hProcess, 0);
-#else
-            DEBUG_printf("close(): ERR: Not connected to proxy\n");
-#endif
+};
+
+
+class TOR{
+protected:
+    int torPort;
+    std::string torrcPath;
+    bool debug;
+    bool proxyRunning = false;
+    pid_t torProxyProcess = 0;
+    sockaddr_in torProxyAddr = {0};
+
+    void DEBUG_printf(const char* format, ...){
+        if(this->debug){
+            va_list args;
+            va_start(args, format);
+            vprintf(format, args);
+            va_end(args);
         }
     }
 
-    /*
-        getSocket()
-        Returns the socket used to connect to the proxy, allowing you to use the socket directly (in case you need to do something that this class doesn't support)
-    */
-    SOCKET getSocket(){
-        return this->torProxySocket;
+    int startTorProxy(){
+        FILE* torTest = popen("tor --version", "r"); // Check if TOR can be run from the command line
+        if(torTest == NULL){
+            DEBUG_printf("startTorProxy(): ERR: Failed to run TOR from command line\n");
+            return EXIT_FAILURE;
+        }
+        pclose(torTest);
+        this->torProxyProcess = fork();
+        if(this->torProxyProcess == 0){ // If inside the child process
+            DEBUG_printf("startTorProxy(): Starting TOR\n");
+            execlp("tor", "tor", "-f", this->torrcPath.c_str(), NULL);
+            DEBUG_printf("startTorProxy(): ERR: Failed to start TOR\n");
+            return EXIT_FAILURE;
+        }
+        // === Wait for TOR to start by attempting a connection to 127.0.0.1:torPort every 250ms until it succeeds
+        DEBUG_printf("startTorProxy(): Waiting for TOR to start\n");
+        int torProxyTestSocket = socket(AF_INET, SOCK_STREAM, 0); // Not using the SOCKET typedef because this version of this function wont be running on windows
+        sockaddr_in torProxyTestAddr = {0};
+        torProxyTestAddr.sin_family = AF_INET;
+        torProxyTestAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+        torProxyTestAddr.sin_port = htons(this->torPort);
+        while(connect(torProxyTestSocket, (struct sockaddr*)&torProxyTestAddr, sizeof(this->torProxyAddr)) != 0){
+            usleep(250000);
+        }
+        close(torProxyTestSocket);
+        DEBUG_printf("startTorProxy(): TOR started\n");
+        return EXIT_SUCCESS;
     }
 
-};
+    void createTorrc(){
+        // === Remove old torrc file if it exists, to ensure no old settings are used
+        remove(this->torrcPath.c_str());
+        // === Create a new torrc file and set the SocksPort to the port specified in this->torPort
+        std::ofstream torrcFile(this->torrcPath);
+        torrcFile << "SocksPort " << this->torPort << std::endl;
+        torrcFile.close();
+    }
 
-}
-
-namespace torPlusPlus{
-
-/*
-    torSocketExtended
-    A class that extends torSocket to add some useful functions
-*/
-class torSocketExtended : public torSocket{
 public:
-    // !!! Not suitable for binary data
-    std::string proxyRecvStrUntilNewln(){ 
-        std::string data;
-        char buffer[1024];
-        int received;
-        while((received = this->proxyRecv(buffer, sizeof(buffer))) > 0){
-            data.append(buffer, received);
-            if(data.find("\n") != std::string::npos){
-                break;
-            }
-        }
-        return data;
+    TOR(const int torPort = 9050, const std::string& torrcPath = ".tpptorrc", const bool debug = false){
+        this->torPort = torPort;
+        this->torrcPath = torrcPath;
+        this->debug = debug;
+        this->createTorrc();
     }
 
-    // !!! Not suitable for binary data
-    int proxySendStr(std::string data){
-        return this->proxySend(data.c_str(), data.length());
+    ~TOR(){
+        if(this->proxyRunning){
+            DEBUG_printf("~TOR(): Stopping TOR\n");
+            kill(this->torProxyProcess, SIGTERM);
+            this->proxyRunning = false;
+        }
     }
-    
+
+    int start(){
+        if(!this->proxyRunning){
+            this->proxyRunning = true;
+            return this->startTorProxy();
+        }else{
+            DEBUG_printf("start(): ERR: TOR proxy already running\n");
+            return EXIT_FAILURE;
+        }
+    }
+
+    int restart(){
+        if(this->proxyRunning){
+            DEBUG_printf("restart(): Restarting TOR\n");
+            kill(this->torProxyProcess, SIGTERM);
+            this->proxyRunning = false;
+            return this->startTorProxy();
+        }else{
+            DEBUG_printf("restart(): ERR: TOR proxy not running\n");
+            return EXIT_FAILURE;
+        }
+    }
+
+    /*
+        ## HiddenServicePort x y:z says to redirect requests on port x to the
+        ## address y:z.
+    */
+    int addService(const std::string& servicePath, const int serviceTORPort, const int servicePort){
+        if(this->proxyRunning){
+            DEBUG_printf("addService(): ERR: Cannot add service while TOR proxy is running\n");
+            return EXIT_FAILURE;
+        }
+        std::ofstream torrcFile(this->torrcPath, std::ios_base::app);
+        torrcFile << "HiddenServiceDir " << servicePath << std::endl;
+        torrcFile << "HiddenServicePort " << serviceTORPort << "127.0.0.1:" << servicePort << std::endl;
+        torrcFile.close();
+        return EXIT_SUCCESS;
+    }
+
+    /*
+        Creates and connects a socket to this TOR instance
+    */
+    TORSocket getSocket(){
+        TORSocket ts(this->debug);
+        ts.connectToProxy(this->torPort);
+        return ts;
+    }
+
 };
+
 
 }
