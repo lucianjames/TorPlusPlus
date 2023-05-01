@@ -253,6 +253,9 @@ protected:
         }
     }
 
+    /*
+        Attempts a connection to the TOR proxy at 127.0.0.1:this->torPort every 250ms until it succeeds
+    */
     void waitForProxy(){
         // === Wait for TOR to start by attempting a connection to 127.0.0.1:torPort every 250ms until it succeeds
         this->DEBUG_printf("TOR::waitForProxy(): Waiting for TOR\n");
