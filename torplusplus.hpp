@@ -238,6 +238,7 @@ class TOR{
 protected:
     int torPort;
     std::string torrcPath;
+    std::string torExePath;
     bool debug;
     bool proxyRunning = false;
     pid_t torProxyProcess = 0;
@@ -251,6 +252,22 @@ protected:
             va_end(args);
         }
     }
+
+    void waitForProxy(){
+        // === Wait for TOR to start by attempting a connection to 127.0.0.1:torPort every 250ms until it succeeds
+        this->DEBUG_printf("waitForProxy(): Waiting for TOR\n");
+        int torProxyTestSocket = socket(AF_INET, SOCK_STREAM, 0); // Not using the SOCKET typedef because this version of this function wont be running on windows
+        sockaddr_in torProxyTestAddr = {0};
+        torProxyTestAddr.sin_family = AF_INET;
+        torProxyTestAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+        torProxyTestAddr.sin_port = htons(this->torPort);
+        while(connect(torProxyTestSocket, (struct sockaddr*)&torProxyTestAddr, sizeof(this->torProxyAddr)) != 0){
+            usleep(250000);
+        }
+        close(torProxyTestSocket);
+        this->DEBUG_printf("waitForProxy(): Done\n");
+    }
+
     /*
         Starts the TOR proxy (via the command line)
         Returns:
@@ -261,7 +278,7 @@ protected:
         FILE* torTest = popen("tor --version", "r"); // Check if TOR can be run from the command line
         if(torTest == NULL){
             this->DEBUG_printf("startTorProxy(): ERR: Failed to run TOR from command line\n");
-            return EXIT_FAILURE;
+            return -1;
         }
         pclose(torTest);
         this->torProxyProcess = fork();
@@ -269,21 +286,32 @@ protected:
             this->DEBUG_printf("startTorProxy(): Starting TOR\n");
             execlp("tor", "tor", "-f", this->torrcPath.c_str(), NULL);
             this->DEBUG_printf("startTorProxy(): ERR: Failed to start TOR\n");
-            return EXIT_FAILURE;
+            return -1;
         }
-        // === Wait for TOR to start by attempting a connection to 127.0.0.1:torPort every 250ms until it succeeds
-        this->DEBUG_printf("startTorProxy(): Waiting for TOR to start\n");
-        int torProxyTestSocket = socket(AF_INET, SOCK_STREAM, 0); // Not using the SOCKET typedef because this version of this function wont be running on windows
-        sockaddr_in torProxyTestAddr = {0};
-        torProxyTestAddr.sin_family = AF_INET;
-        torProxyTestAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
-        torProxyTestAddr.sin_port = htons(this->torPort);
-        while(connect(torProxyTestSocket, (struct sockaddr*)&torProxyTestAddr, sizeof(this->torProxyAddr)) != 0){
-            usleep(250000);
-        }
-        close(torProxyTestSocket);
+        // === Wait for TOR to start
+        this->waitForProxy();
         this->DEBUG_printf("startTorProxy(): TOR started\n");
-        return EXIT_SUCCESS;
+        return 0;
+    }
+
+    /*
+        Starts the TOR proxy by running an executable file located at this->torExePath
+        Returns:
+            0 on success
+            -1 on failure
+    */
+    int startTorProxyFromFile(){
+        this->torProxyProcess = fork();
+        if(this->torProxyProcess == 0){
+            this->DEBUG_printf("startTorProxyFromFile(): Starting TOR\n");
+            execlp(this->torExePath.c_str(), this->torExePath.c_str(), "-f", this->torrcPath.c_str(), NULL);
+            this->DEBUG_printf("startTorProxyFromFile(): ERR: Failed to start TOR\n");
+            return -1;
+        }
+        // === Wait for TOR to start
+        this->waitForProxy();
+        this->DEBUG_printf("startTorProxy(): TOR started\n");
+        return 0;
     }
 
     /*
@@ -311,11 +339,12 @@ public:
             torrcPath: The path to create the TOR configuration file at
             debug: Whether or not to print debug info to the console
     */
-    TOR(const int torPort = 9050, const std::string& torrcPath = ".tpptorrc", const bool debug = false){
+    TOR(const int torPort = 9050, const std::string& torrcPath = ".tpptorrc", const bool debug = false, const std::string& torExePath = "tor"){
         this->torPort = torPort;
         this->torrcPath = torrcPath;
         this->debug = debug;
         this->createTorrc();
+        this->torExePath = torExePath;
     }
 
     /*
@@ -354,6 +383,22 @@ public:
             return this->startTorProxy();
         }else{
             this->DEBUG_printf("start(): ERR: TOR proxy already running\n");
+            return -1;
+        }
+    }
+
+    /*
+        Starts the TOR proxy, using an executable file directly. Located at this->torExePath
+        Returns:
+            0 on success
+            -1 on failure
+    */
+    int startFromFile(){
+        if(!this->proxyRunning){
+            this->proxyRunning = true;
+            return this->startTorProxyFromFile();
+        }else{
+            this->DEBUG_printf("startFromFile(): ERR: TOR proxy already running\n");
             return -1;
         }
     }

@@ -2,3 +2,5 @@
 example/a.out
 example/tpptorrc
 .vscode/settings.json
+tor
+example/tor
