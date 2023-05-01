@@ -31,6 +31,7 @@
 
 namespace torPlusPlus{
 
+
 #ifndef _WIN32
 #define closesocket close
 #define SOCKET_ERROR    -1
@@ -75,7 +76,6 @@ protected:
 #endif
     SOCKET torProxySocket = {0};
     sockaddr_in torProxyAddr = {0};
-
     bool debug = false;
     bool connected = false;
     bool socks5ConnectedToHost = false;
@@ -93,17 +93,21 @@ public:
     /*
         Constructor
         Arguments:
-            debug: If true, enables debug output to stdout
+            debug: If true, enables debug output to stdout via DEBUG_printf()
     */
     TORSocket(const bool debug = false){
         this->debug = debug;
     }
 
+    ~TORSocket(){
+        this->closeTorSocket();
+    }
+
     /*
         Connects to the Tor proxy
         Arguments:
-            torProxyIP: The IP address of the proxy (almost always 127.0.0.1)
             torProxyPort: The port of the proxy (almost always 9050)
+            torProxyIP: The IP address of the proxy (almost always 127.0.0.1)
         Returns:
             0 on success,
             -1 on failure
@@ -116,7 +120,7 @@ public:
         int WSAStartupResult = WSAStartup(MAKEWORD(2, 2), &this->wsaData); // MAKEWORD(2,2) specifies version 2.2 of Winsock
         if(WSAStartupResult != 0){ // WSAStartup returns 0 on success
             DEBUG_printf("TORSocket::connectToProxy(): ERR: WSAStartup failed with error: %d\n", WSAStartupResult);
-            return 0;
+            return -1;
         }
 #endif
         // === Create a SOCKET for connecting to the proxy
@@ -144,15 +148,14 @@ public:
         send(this->torProxySocket, authReq, sizeof(authReq), 0);
         char authResp[2]; // 2 chars is enough for the response, the second char is the error code.
         recv(this->torProxySocket, authResp, sizeof(authResp), 0);
-        if(authResp[1] != 0x00){ // 0x00 indicates success, anything else is an error
+        if(authResp[1] != 0x00){ // 0x00 indicates success, anything else is an error (See RFC1928)
             this->DEBUG_printf("TORSocket::connectToProxy(): ERR: Proxy authentication failed with error: %d\n", authResp[1]);
             closesocket(this->torProxySocket);
             WSACleanup();
             return -1;
         }
         this->DEBUG_printf("TORSocket::connectToProxy(): Proxy authentication successful\n");
-        this->connected = true; // We have successfully connected to the proxy and authenticated, so set this->connected to true
-        // this->connected is used to ensure that a connection is established before attempting to send data through the proxy
+        this->connected = true; // Used to ensure that a connection is established before attempting to send data through the proxy
         return 0;
     }
 
@@ -202,7 +205,7 @@ public:
             return (int)connectResp[1]; // Return SOCKS5 err code
         }
         this->DEBUG_printf("TORSocket::connectProxyTo(): Successfully connected to %s:%d\n", host, port);
-        this->socks5ConnectedToHost = true; // We have successfully connected to the host through the proxy, so set this->socks5ConnectedToHost to true
+        this->socks5ConnectedToHost = true; // Like this->connected, this is used to ensure that a valid connection to a host has been made before attempting to send/recv data
         return 0;
     }
 
@@ -253,6 +256,21 @@ public:
         return received;
     }
 
+    /*
+        closeTorSocket()
+        Stops the proxy and closes the socket
+    */
+    void closeTorSocket(){
+        DEBUG_printf("TORSocket::closeTorSocket(): Closing proxy socket\n");
+        closesocket(this->torProxySocket);
+#ifdef _WIN32
+        DEBUG_printf("TORSocket::closeTorSocket(): Running WSACleanup\n");
+        WSACleanup();
+#endif
+        this->connected = false;
+        this->socks5ConnectedToHost = false;
+    }
+
 };
 
 
@@ -293,12 +311,7 @@ protected:
 #endif
         // === Wait for TOR to start by attempting a connection to 127.0.0.1:torPort every 250ms until it succeeds
         this->DEBUG_printf("TOR::waitForProxy(): Waiting for TOR\n");
-        SOCKET torProxyTestSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); // Not using the SOCKET typedef because this version of this function wont be running on windows
-        
-        if(torProxyTestSocket == INVALID_SOCKET){
-            std::cout << "INVALID SOCK" << std::endl;
-        }
-        
+        SOCKET torProxyTestSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP); 
         sockaddr_in torProxyTestAddr = {0};
         torProxyTestAddr.sin_family = AF_INET;
         torProxyTestAddr.sin_addr.s_addr = inet_addr("127.0.0.1");
@@ -414,7 +427,6 @@ protected:
             this->DEBUG_printf("TOR::startTorProxyFromFile(): ERR: Failed to start TOR\n");
             return -1;
         }
-        // === Wait for TOR to start
         this->waitForProxy();
         this->DEBUG_printf("TOR::startTorProxy(): TOR started\n");
         return 0;
@@ -450,8 +462,8 @@ public:
         this->torPort = torPort;
         this->torrcPath = torrcPath;
         this->debug = debug;
-        this->createTorrc();
         this->torExePath = torExePath;
+        this->createTorrc();
     }
 
     /*
@@ -545,8 +557,7 @@ public:
         }
         std::ofstream torrcFile(this->torrcPath, std::ios_base::app);
         torrcFile << "HiddenServiceDir " << servicePath << std::endl;
-        // HiddenServicePort x y:z says to redirect requests on port x to the address y:z.
-        torrcFile << "HiddenServicePort " << serviceTORPort << " 127.0.0.1:" << servicePort << std::endl;
+        torrcFile << "HiddenServicePort " << serviceTORPort << " 127.0.0.1:" << servicePort << std::endl; // HiddenServicePort x y:z says to redirect requests on port x to the address y:z.
         torrcFile.close();
         return 0;
     }

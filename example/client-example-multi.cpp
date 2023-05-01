@@ -29,8 +29,6 @@ int main(){
 
     t1.join();
     t2.join();
-
-    tor.stop(); // This happens when the class is destroyed, but you can do it manually too :)
-
+    
     return 0;
 }
