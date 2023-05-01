@@ -8,12 +8,13 @@
 int main(){
     torPlusPlus::TOR tor(9050, "./tpptorrc", true);
     tor.start();
-    torPlusPlus::TORSocket ts = tor.getSocket();
+    torPlusPlus::TORSocket ts = tor.getSocket(); // Get a pre-configured socket that is already connected to the "tor" instance
     ts.connectProxyTo(HOST, 80); // Connect to the hidden service
     std::string httpReq = "GET / HTTP/1.1\r\nHost: " + std::string(HOST) + "\r\n\r\n"; // Assemble a HTTP GET request to send to the site
     ts.proxySend(httpReq.c_str(), (int)httpReq.length()); // Send the request to the hidden service
     char buf[16384] = {0}; // Up to 16KB of memory for whatever gets sent back
     ts.proxyRecv(buf, sizeof(buf) * sizeof(char)); // Receive a response to the GET request
     printf("%s\n", buf); // Print whatever the server sent back
+    tor.stop(); // This happens when the class is destroyed, but you can do it manually too :)
     return 0;
 }
