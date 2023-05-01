@@ -26,7 +26,7 @@ TOR must be either installed and accessible from the command line, or an executa
 The `torPlusPlus::TOR.start()` and `torPlusPlus::TOR.startFromFile()` functions are used depending on which method of using TOR you choose.
 If you are calling an executable directly, you must pass the path to it into the constructor for the `TOR` class
 ```c++
-TOR(const int torPort = 9050, const std::string& torrcPath = ".tpptorrc", const bool debug = false, const std::string& torExePath = "tor"){
+TOR(const int torPort = 9050, const std::string& torrcPath = ".tpptorrc", const bool debug = false, const std::string& torExePath = "tor")
 ```
 
 ## Public functions / Overviews of TOR and TORSocket classes
