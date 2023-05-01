@@ -1,3 +1,5 @@
+/*
+
 #include <string>
 #include <stdio.h>
 #include <sys/socket.h>
@@ -41,5 +43,13 @@ int main(){
         std::thread t(clientRecvThread, clientSock);
         t.detach();
     }
+    return 0;
+}
+
+*/
+
+#include <iostream>
+int main(){
+    std::cout << "Hello world" << std::endl;
     return 0;
 }
