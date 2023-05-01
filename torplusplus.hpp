@@ -311,14 +311,39 @@ protected:
 
     /*
         Starts the TOR proxy (via the command line)
+        Requires that TOR is installed and in the PATH
         Returns:
             0 on success
             -1 on failure
     */
 #ifdef _WIN32
     int startTorProxy(){
-        std::cout << "!!!! startTorProxy not implemented" << std::endl;
-        return -1;
+        std::string command ="tor -f " + this->torrcPath;
+        wchar_t* lpCommand = new wchar_t[command.length() + 1];
+        mbstowcs_s(NULL, lpCommand, command.size() + 1, command.c_str(), command.size() + 1);
+        STARTUPINFOW startupInfo;
+        ZeroMemory(&startupInfo, sizeof(startupInfo));
+        startupInfo.cb = sizeof(startupInfo);
+        ZeroMemory(&this->torProxyProcess, sizeof(this->torProxyProcess));
+        BOOL success = CreateProcessW(NULL, 
+                                      lpCommand,
+                                      NULL, 
+                                      NULL, 
+                                      FALSE, 
+                                      0, 
+                                      NULL, 
+                                      NULL, 
+                                      &startupInfo, 
+                                      &this->torProxyProcess
+        );
+        delete[] lpCommand;
+        if(!success){
+            this->DEBUG_printf("TOR::startTorProxy(): ERR: CreateProcessW failed: %d\n", GetLastError());
+            return -1;
+        }
+        this->waitForProxy();
+        this->DEBUG_printf("TOR::startTorProxy(): TOR started\n");
+        return 0;
     }
 #else
     int startTorProxy(){
