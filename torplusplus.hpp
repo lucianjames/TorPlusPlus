@@ -73,7 +73,6 @@ protected:
     }
 
 public:
-
     TORSocket(const bool debug = false){
         this->debug = debug;
     }
@@ -85,8 +84,8 @@ public:
             torProxyIP: The IP address of the proxy (almost always 127.0.0.1)
             torProxyPort: The port of the proxy (almost always 9050)
         Returns:
-            1 on success
-            0 on error
+            EXIT_SUCCESS on success,
+            EXIT_FAILURE on failure
     */
     int connectToProxy(const int torProxyPort = 9050,
                        const char* torProxyIP = "127.0.0.1"
@@ -96,7 +95,7 @@ public:
         if(this->torProxySocket == INVALID_SOCKET){ // If the socket failed to create, abort the connection attempt
             DEBUG_printf("connectToProxy(): ERR: socket failed with error: %ld\n", WSAGetLastError());
             WSACleanup();
-            return 0;
+            return EXIT_FAILURE;
         }
         // === Setup the proxy address structure:
         this->torProxyAddr.sin_family = AF_INET; // IPv4
@@ -108,7 +107,7 @@ public:
             DEBUG_printf("connectToProxy(): ERR: connect failed with error: %ld\n", WSAGetLastError());
             closesocket(this->torProxySocket);
             WSACleanup();
-            return 0;
+            return EXIT_FAILURE;
         }
         DEBUG_printf("connectToProxy(): Connected to proxy at %s:%d\n", torProxyIP, torProxyPort);
         // === Authenticate with the proxy:
@@ -120,12 +119,12 @@ public:
             DEBUG_printf("connectToProxy(): ERR: Proxy authentication failed with error: %d\n", authResp[1]);
             closesocket(this->torProxySocket);
             WSACleanup();
-            return 0;
+            return EXIT_FAILURE;
         }
         DEBUG_printf("connectToProxy(): Proxy authentication successful\n");
         this->connected = true; // We have successfully connected to the proxy and authenticated, so set this->connected to true
         // this->connected is used to ensure that a connection is established before attempting to send data through the proxy
-        return 1;
+        return EXIT_SUCCESS;
     }
 
     /*
@@ -289,11 +288,17 @@ public:
     }
 
     ~TOR(){
+        this->stop();
+        remove(this->torrcPath.c_str()); // Cleanup the torrc file
+    }
+
+    int stop(){
         if(this->proxyRunning){
-            DEBUG_printf("~TOR(): Stopping TOR\n");
+            DEBUG_printf("stop(): Stopping TOR\n");
             kill(this->torProxyProcess, SIGTERM);
             this->proxyRunning = false;
         }
+        return EXIT_SUCCESS;
     }
 
     int start(){
@@ -307,15 +312,8 @@ public:
     }
 
     int restart(){
-        if(this->proxyRunning){
-            DEBUG_printf("restart(): Restarting TOR\n");
-            kill(this->torProxyProcess, SIGTERM);
-            this->proxyRunning = false;
-            return this->startTorProxy();
-        }else{
-            DEBUG_printf("restart(): ERR: TOR proxy not running\n");
-            return EXIT_FAILURE;
-        }
+        this->stop();
+        return this->start();
     }
 
     /*
