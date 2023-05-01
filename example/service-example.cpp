@@ -1,17 +1,33 @@
-/*
 
 #include <string>
 #include <stdio.h>
+#include <thread>
+#ifdef _WIN32
+#pragma comment(lib, "ws2_32.lib")
+#define _WINSOCK_DEPRECATED_NO_WARNINGS // Disable the "deprecated" warning for inet_addr()
+// I tried using inet_pton() like the warning suggested, but it didnt work and I dont really care to fix it
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <strsafe.h>
+#include <windows.h>
+#else
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <thread>
+#define closesocket close
+#define SOCKET_ERROR    -1
+#define INVALID_SOCKET  -1
+#define WSACleanup() // Define cleanup to nothing on Linux
+#define WSAGetLastError() errno
+#define SOCKADDR struct sockaddr
+typedef int SOCKET;
+#endif
 
 #include "../torplusplus.hpp"
 
 #define HOST "cryptbbtg65gibadeeo2awe3j7s6evg7eklserehqr4w4e2bis5tebid.onion"
 
-void clientRecvThread(int sock){
+void clientRecvThread(SOCKET sock){
     while(true){
         char buf[1024];
         int len = recv(sock, buf, 50000, 0);
@@ -29,8 +45,11 @@ int main(){
     // Create a service that listens on port 80 and forwards all traffic to port 8081
     tor.addService("./testService", 80, 8081);
     tor.start();
-    // Create a socket that listens on port 8081 and prints anything it receives to stdout
-    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    WSADATA wsaData = {0};
+#ifdef _WIN32
+        int WSAStartupResult = WSAStartup(MAKEWORD(2, 2), &wsaData); // MAKEWORD(2,2) specifies version 2.2 of Winsock
+#endif
+    SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);
     struct sockaddr_in addr;
     addr.sin_family = AF_INET;
     addr.sin_port = htons(8081);
@@ -38,18 +57,10 @@ int main(){
     bind(sock, (struct sockaddr*)&addr, sizeof(addr));
     listen(sock, 5);
     while(true){
-        int clientSock = accept(sock, NULL, NULL);
+        SOCKET clientSock = accept(sock, NULL, NULL);
         printf("=== Client connected\n");
         std::thread t(clientRecvThread, clientSock);
         t.detach();
     }
-    return 0;
-}
-
-*/
-
-#include <iostream>
-int main(){
-    std::cout << "Hello world" << std::endl;
     return 0;
 }
