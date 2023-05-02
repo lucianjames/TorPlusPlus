@@ -40,7 +40,7 @@ void clientRecvThread(SOCKET sock){
 }
 
 int main(){
-    torPlusPlus::TOR tor(9051, ".tpptorrc", true); // port 9051, create config file at "./tpptorrc", enable logging
+    torPlusPlus::TOR tor(9051, ".tpptorrc", true); // port 9051, create config file at ".tpptorrc", enable logging
     // NOTE: The config file will be "cleared" (deleted), so dont accidentally set the path to anything important!
     // Create a service that listens on port 80 and forwards all traffic to port 8081
     tor.addService("./testService", 80, 8081);
