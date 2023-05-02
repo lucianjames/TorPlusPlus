@@ -30,7 +30,7 @@ typedef int SOCKET;
 void clientRecvThread(SOCKET sock){
     while(true){
         char buf[1024];
-        int len = recv(sock, buf, 50000, 0);
+        int len = recv(sock, buf, 1024, 0);
         if(len <= 0){
             printf("=== Client disconnected\n");
             break;
