@@ -19,7 +19,7 @@ void httpGetThread(torPlusPlus::TORSocket s, std::string host){
 }
 
 int main(){
-    torPlusPlus::TOR tor(9051, ".tpptorrc", true, "tor.exe"); // port 9051, create config file at "./tpptorrc", enable logging
+    torPlusPlus::TOR tor(9051, ".tpptorrc", true); // port 9051, create config file at "./tpptorrc", enable logging
     // NOTE: The config file will be "cleared" (deleted), so dont accidentally set the path to anything important!
     tor.start(); // Start the tor binary
     // Create two new sockets in two new threads:
