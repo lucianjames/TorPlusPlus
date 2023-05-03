@@ -12,7 +12,7 @@ int main(){
     torPlusPlus::TORSocket ts = tor.getSocket(); // Get a pre-configured socket that is already connected to the "tor" instance
     ts.connectProxyTo(HOST, 80); // Connect to the hidden service
     std::string httpReq = "GET / HTTP/1.1\r\nHost: " + std::string(HOST) + "\r\n\r\n"; // Assemble a HTTP GET request to send to the site
-    ts.proxySend(httpReq.c_str(), (int)httpReq.length()); // Send the request to the hidden service
+    ts.proxySend(httpReq); // Send the request to the hidden service
     char* buf = (char*)calloc(50000, sizeof(char)); // Allocate a buffer to receive the response
     ts.proxyRecv(buf, 50000); // Receive the response from the hidden service
     printf("%s\n", buf); // Print whatever the server sent back
