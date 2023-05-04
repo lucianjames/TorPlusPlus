@@ -43,8 +43,10 @@ int main(){
     torPlusPlus::TOR tor(9051, ".tpptorrc", true); // port 9051, create config file at ".tpptorrc", enable logging
     // NOTE: The config file will be "cleared" (deleted), so dont accidentally set the path to anything important!
     // Create a service that listens on port 80 and forwards all traffic to port 8081
-    tor.addService("./testService", 80, 8081);
+    torPlusPlus::serviceInfo ts = tor.addService("./testService", 80, 8081);
     tor.start();
+    std::cout << ts.getHostname() << std::endl;
+    std::cout << ts.getFolderPath() << std::endl;
 #ifdef _WIN32
         WSADATA wsaData = {0};
         int WSAStartupResult = WSAStartup(MAKEWORD(2, 2), &wsaData); // MAKEWORD(2,2) specifies version 2.2 of Winsock

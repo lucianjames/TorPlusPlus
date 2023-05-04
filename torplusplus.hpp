@@ -273,6 +273,36 @@ public:
 
 };
 
+class serviceInfo{
+private:
+    int externPort;
+    int internPort;
+    std::string folderPath;
+    std::string hostname;
+    //std::vector<unsigned int> pubKey;
+    //std::vector<unsigned int> privKey;
+
+public:
+    serviceInfo(const std::string& folderPath, const int externPort, const int servicePort){
+        this->folderPath = folderPath;
+        this->externPort = externPort;
+        this->internPort = internPort;
+        // Reading pub/priv keys go here if i decide its useful
+    }
+
+    std::string getHostname(){
+        std::ifstream hnif;
+        hnif.open(this->folderPath + "/hostname");
+        hnif >> this->hostname;
+        hnif.close();
+        return this->hostname;
+    }
+
+    std::string getFolderPath(){
+        return this->folderPath;
+    }
+
+};
 
 class TOR{
 protected:
@@ -544,22 +574,22 @@ public:
         Adds a service to the TOR configuration, allowing you to run servers using this TOR instance
         Requires a restart of the TOR proxy to take effect
         Arguments:
-            servicePath: The path to the folder containing the service's keys
-            serviceTORPort: The port to run the service on
-            servicePort: The port to redirect requests to the service to
+            folderPath: The path to the folder containing the service's keys
+            externPort: The port to run the service on
+            internPort: The port to redirect requests to the service to
         Returns:
             0 on success
             -1 on failure
     */
-    int addService(const std::string& servicePath, const int serviceTORPort, const int servicePort){
+    serviceInfo addService(const std::string& folderPath, const int externPort, const int internPort){
         if(this->proxyRunning){
             this->DEBUG_printf("TOR::addService(): WARN: Service will not be accessible until TOR is restarted\n");
         }
         std::ofstream torrcFile(this->torrcPath, std::ios_base::app);
-        torrcFile << "HiddenServiceDir " << servicePath << std::endl;
-        torrcFile << "HiddenServicePort " << serviceTORPort << " 127.0.0.1:" << servicePort << std::endl; // HiddenServicePort x y:z says to redirect requests on port x to the address y:z.
+        torrcFile << "HiddenServiceDir " << folderPath << std::endl;
+        torrcFile << "HiddenServicePort " << externPort << " 127.0.0.1:" << internPort << std::endl; // HiddenServicePort x y:z says to redirect requests on port x to the address y:z.
         torrcFile.close();
-        return 0;
+        return serviceInfo(folderPath, externPort, internPort);
     }
 
     /*
