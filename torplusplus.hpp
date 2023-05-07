@@ -283,7 +283,7 @@ private:
     //std::vector<unsigned int> privKey;
 
 public:
-    serviceInfo(const std::string& folderPath, const int externPort, const int servicePort){
+    serviceInfo(const std::string& folderPath, const int externPort, const int internPort){
         this->folderPath = folderPath;
         this->externPort = externPort;
         this->internPort = internPort;
