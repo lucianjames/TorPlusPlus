@@ -302,6 +302,14 @@ public:
         return this->folderPath;
     }
 
+    int getExternPort(){
+        return this->externPort;
+    }
+
+    int getInternPort(){
+        return this->internPort;
+    }
+
 };
 
 class TOR{
