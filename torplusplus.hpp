@@ -551,11 +551,15 @@ public:
 
     /*
         Starts the TOR proxy, using an executable file directly. Located at this->torExePath
+        Passing an argument for the tor executable path will update this->torExePath
         Returns:
             0 on success
             -1 on failure
     */
-    int startFromFile(){
+    int startFromFile(std::string newTorExePath = ""){
+        if(newTorExePath != ""){
+            this->torExePath = newTorExePath;
+        }
         this->DEBUG_printf("TOR::startFromFile(): Starting TOR\n");
         if(!this->proxyRunning){
             this->proxyRunning = true;
