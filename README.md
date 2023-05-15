@@ -1,6 +1,3 @@
-# See the rewrite-linux-windows branch!
-https://github.com/LJ3D/TorPlusPlus/tree/rewrite-linux-windows
-
 # TorPlusPlus
 Allows a C++ program to send and receive data through TOR, either to regular clearweb services or to hidden services via onion addresses.
 Also contains functionality for quickly setting up hidden services, allowing you to make a program which configures and starts the hidden service for itself automatically.
