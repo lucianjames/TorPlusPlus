@@ -2,7 +2,7 @@
 Allows a C++ program to send and receive data through TOR, either to regular clearweb services or to hidden services via onion addresses.
 Also contains functionality for quickly setting up hidden services, allowing you to make a program which configures and starts the hidden service for itself automatically.
 
-## Still in development!
+## Still in development! Especially this current version!! very experimental changes !!!!!!
 This new version adds in some extra functionality, and isnt 100% tested.
 
 ## Platform support
