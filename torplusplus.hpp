@@ -483,7 +483,11 @@ protected:
         std::ofstream torrcFile(this->torrcPath);
         torrcFile << "SocksPort " << this->torPort << std::endl;
         if(!this->debug){
+#ifndef _WIN32
             torrcFile << "Log notice file /dev/null" << std::endl;
+#else
+            torrcFile << "Log notice file NUL" << std::endl;
+#endif
         }
         torrcFile.close();
     }
