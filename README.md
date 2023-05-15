@@ -1,3 +1,6 @@
+# See the rewrite-linux-windows branch!
+https://github.com/LJ3D/TorPlusPlus/tree/rewrite-linux-windows
+
 # TorPlusPlus
 Allows a C++ program to send and receive data through TOR, either to regular clearweb services or to hidden services via onion addresses.
 Also contains functionality for quickly setting up hidden services, allowing you to make a program which configures and starts the hidden service for itself automatically.
@@ -25,9 +28,7 @@ See https://github.com/LJ3D/TorRemoteAccess/ for a more functional program utili
 TOR must be either installed and accessible from the command line, or an executable for TOR must be placed alongside your executable.
 The `torPlusPlus::TOR.start()` and `torPlusPlus::TOR.startFromFile()` functions are used depending on which method of using TOR you choose.
 If you are calling an executable directly, you must pass the path to it into the constructor for the `TOR` class
-```c++
-TOR(const int torPort = 9050, const std::string& torrcPath = ".tpptorrc", const bool debug = false, const std::string& torExePath = "tor")
-```
+
 
 ## Public functions / Overviews of TOR and TORSocket classes
 
