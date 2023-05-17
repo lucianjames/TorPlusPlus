@@ -1,11 +1,11 @@
 
-example/a.out
-example/tpptorrc
+examples/a.out
+examples/tpptorrc
 .vscode/settings.json
 tor
-example/tor
-example/testService/hostname
-example/testService/hs_ed25519_public_key
-example/testService/hs_ed25519_secret_key
-example/.tpptorrc
-example/build/
+examples/tor
+examples/testService/hostname
+examples/testService/hs_ed25519_public_key
+examples/testService/hs_ed25519_secret_key
+examples/.tpptorrc
+examples/build/
