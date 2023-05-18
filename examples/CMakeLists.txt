@@ -1,9 +1,7 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(TorPlusPlusQuickExamples)
+project(TorPlusPlusExamples)
 
-add_executable(client-example client-example.cpp)
+add_executable(http-get-multithreaded http-get-multithreaded.cpp)
 
-add_executable(client-example-multi client-example-multi.cpp)
-
-add_executable(service-example service-example.cpp)
+add_executable(minimal-service minimal-service.cpp)
